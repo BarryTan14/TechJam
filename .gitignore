@@ -176,3 +176,6 @@ dmypy.json
 
 # LangGraph specific
 .langchain.db
+
+# LangGraph output files
+langgraph/output/
