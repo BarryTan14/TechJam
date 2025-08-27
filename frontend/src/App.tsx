@@ -1,19 +1,139 @@
-import { Card, Row, Col } from 'antd';
+import { Card, Row, Col, Table, Input, Collapse, CollapseProps } from 'antd';
+import { ResponsiveChoropleth } from '@nivo/geo'
+import countries from './world_countries.json'
+import { useState } from 'react';
 
+const CollapsableFilter = () => {
+    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
+
+    // Selection handler
+    const rowSelection = {
+        selectedRowKeys,
+        onChange: (newSelectedRowKeys: React.Key[], selectedRows: any[]) => {
+            setSelectedRowKeys(newSelectedRowKeys);
+        },
+    };
+
+    const collapseItems: CollapseProps['items'] = [
+    {
+        key: '1',
+        label: 'Features',
+        children: 
+        <>
+            <Table 
+                columns={[{
+                    title: "Features",
+                    dataIndex: "name"
+                }]}
+                dataSource={[{
+                    "name": "Feature 1"
+                }]}
+                rowSelection={rowSelection}
+            />
+            <Input placeholder='Input Feature ID'/>
+        </>,
+    },
+    {
+        key: '2',
+        label: 'Region',
+        children: <></>,
+    },
+    {
+        key: '3',
+        label: 'Others',
+        children: <></>,
+    },
+    ];
+
+    return (
+        <Collapse items={collapseItems} defaultActiveKey={['1']} />
+    )
+}
+
+
+const sampleHeatMapData = 
+    [
+        {
+            "id": "AFG",
+            "value": 863184
+        },
+        {
+            "id": "AGO",
+            "value": 52326
+        },
+    ]
 
 export default function Dashboard() {
     return (
         <div style={{ padding: 24 }}>
             <h1 className='text-3xl font-extrabold' style={{"marginTop": 0}}>DASHBOARD</h1>
             <Row className="mt-2" justify="space-evenly">
-                <Col span={4}>
-                    <Card></Card>
+                <Col span={5}>
+                    <Card title="Filtering">
+                        <CollapsableFilter />
+                    </Card>
                 </Col>
                 <Col span={12}>
-                    <Card></Card>
+                    <Card>
+                        <div style={{ height: 400 }}>
+                        <ResponsiveChoropleth /* or Choropleth for fixed dimensions */
+                            data={sampleHeatMapData}
+                            features={countries.features}
+                            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
+                            colors="nivo"
+                            domain={[0, 1000000]}
+                            unknownColor="#666666"
+                            label="properties.name"
+                            valueFormat=".2s"
+                            enableGraticule={true}
+                            graticuleLineColor="#dddddd"
+                            borderWidth={0.5}
+                            borderColor="#152538"
+                            legends={[
+                                {
+                                    anchor: 'bottom-left',
+                                    direction: 'column',
+                                    justify: true,
+                                    translateX: 20,
+                                    translateY: -100,
+                                    itemsSpacing: 0,
+                                    itemWidth: 94,
+                                    itemHeight: 18,
+                                    itemDirection: 'left-to-right',
+                                    itemTextColor: '#444444',
+                                    itemOpacity: 0.85,
+                                    symbolSize: 18
+                                }
+                            ]}
+                        />
+                        </div>
+                        <p
+                        style={{
+                            border: '0.5px solid #333',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            maxWidth: '100%',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                        }}>
+                            Here will be where the data output be at
+                        </p>
+                    </Card>
                 </Col>
-                <Col span={4}>
-                    <Card></Card>
+                <Col span={5}>
+                    <Card title="Feature Description">
+                        <p
+                        style={{
+                            border: '0.5px solid #333',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            maxWidth: '100%',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                        }}>
+                            Here will be where the feature description be at
+                        </p>
+                    </Card>
                 </Col>
             </Row>
             
