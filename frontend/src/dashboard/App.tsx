@@ -60,13 +60,17 @@ const CollapsableFilter = () => {
 const sampleHeatMapData = 
     [
         {
-            "id": "AFG",
+            "id": "USA",
             "value": 863184
         },
         {
-            "id": "AGO",
-            "value": 52326
+            "id": "Alaska",
+            "value": 50000
         },
+        {
+            "id": "Hawaii",
+            "value": 450000
+        }
     ]
 
 const signOut = () => {
@@ -130,6 +134,8 @@ export default function Dashboard() {
                                     symbolSize: 18
                                 }
                             ]}
+                            projectionScale={255}
+                            projectionTranslation={[1.48, 1.15]}
                         />
                         </div>
                         <p
