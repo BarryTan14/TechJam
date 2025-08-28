@@ -1,56 +1,126 @@
-import React, { useState } from 'react'
-import './App.css'
+import { Table, Button, Popconfirm, Row, Modal, Form, Input } from "antd"
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
 
-function App() {
-  const [count, setCount] = useState(0)
+const tableCol = (onEditDetail: (detail: any) => void, onDelete: (detail: any) => void) => [
+    {
+        title: "ID",
+        dataIndex: "id",
+        key: "id",
+    },
+    {
+        title: "Name",
+        dataIndex: "name",
+        key: "name",
+    },
+    {
+        title: "Description Status",
+        dataIndex: "status",
+        key: "status",
+    },
+    {
+    key: "Actions",
+    render: (_: any, record: any) => (
+      <div key={record.id} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Button onClick={() => onEditDetail(record)}>
+          <EditOutlined />
+        </Button>
+        &nbsp;
+        <Popconfirm
+          title="Delete the PRD?"
+          description="Are you sure to delete this?"
+          okText="Yes"
+          cancelText="No"
+          onConfirm={() => onDelete(record)}
+        >
+          <Button>
+            <DeleteOutlined />
+          </Button>
+        </Popconfirm>
+      </div>
+    ),  
+  },
+]
 
+const sampleData = [
+    {
+        "id": 1,
+        "name": "XXX Name",
+        "status": "Pending"
+    },
+    {
+        "id": 2,
+        "name": "XXX Name",
+        "status": "Review"
+    },
+]
+
+const ModalForm = () => {
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>🚀 TechJam Frontend</h1>
-        <p>Welcome to your new React application!</p>
-        
-        <div className="card">
-          <button onClick={() => setCount((count) => count + 1)}>
-            Count is {count}
-          </button>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test HMR
-          </p>
-        </div>
-
-        <div className="features">
-          <h2>✨ Features</h2>
-          <ul>
-            <li>⚡ Vite for fast development</li>
-            <li>⚛️ React 18 with TypeScript</li>
-            <li>🎨 Modern CSS with Tailwind-like styling</li>
-            <li>🔧 ESLint for code quality</li>
-            <li>📦 Hot Module Replacement</li>
-          </ul>
-        </div>
-
-        <div className="links">
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
+    <Form layout="vertical">     
+          <Form.Item
+            name="name"
+            label="Name"
           >
-            Learn React
-          </a>
-          <a
-            className="App-link"
-            href="https://vitejs.dev"
-            target="_blank"
-            rel="noopener noreferrer"
+            <Input 
+              placeholder="Enter name of PRD" 
+            />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Description"
           >
-            Learn Vite
-          </a>
-        </div>
-      </header>
-    </div>
+            <Input.TextArea 
+              rows={4} 
+              placeholder="Please enter description" 
+            />
+          </Form.Item>
+    </Form>
   )
 }
 
-export default App
+export default function App() {
+    const navigate = useNavigate();
+    const [openModal, setOpenModal] = useState(false)
+
+    // Following two functions is to handle new detail
+    const showModal = () => {
+        setOpenModal(true);
+    };
+
+    const onCloseModal = () => {
+        setOpenModal(false);
+    };
+
+    return (
+        <div style={{ padding: 24 }}>
+            <h1 style={{"marginTop": 0}}>PRD FORM</h1>
+            <div>
+              <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button>
+              <Button onClick={() => navigate('/logs')}>View Logs</Button>
+            </div>
+            <Row justify="end" style={{marginBottom: "10px"}}>
+              <Button title="Add new PRD" onClick={showModal}>Add New PRD</Button>
+            </Row>
+            <Modal
+              title="Create a new PRD"
+              width={720}
+              open={openModal}
+              onCancel={onCloseModal}
+              okText="Submit"
+              styles={{
+              body: {
+                  paddingBottom: 80,
+              },
+              }}>
+                <ModalForm></ModalForm>
+            </Modal>
+            <Table 
+                columns={tableCol(()=>{}, () => {})}
+                dataSource={sampleData}
+                rowKey="id"
+            />
+        </div>
+    )
+}
