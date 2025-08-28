@@ -18,28 +18,101 @@ logger = logging.getLogger(__name__)
 uri = "mongodb+srv://tanedric_db_user:vZkI4o5u3VnKvThk@techjam.8cvwszr.mongodb.net/?retryWrites=true&w=majority&appName=TechJam"
 
 # Create a new client and connect to the server
-client = MongoClient(uri, server_api=ServerApi('1'))
-
-# Send a ping to confirm a successful connection
 try:
+    client = MongoClient(uri, server_api=ServerApi('1'))
+    # Send a ping to confirm a successful connection
     client.admin.command('ping')
     print("✅ Successfully connected to MongoDB!")
     db = client["TechJam"]
     print(f"✅ Connected to database: {db.name}")
+    
+    # Initialize collections
+    prd_collection = db["PRD"]
+    feature_data_collection = db["feature_data"]
+    logs_collection = db["logs"]
+    
+    # Create indexes for better performance
+    prd_collection.create_index("ID", unique=True)
+    feature_data_collection.create_index("uuid", unique=True)
+    feature_data_collection.create_index("prd_uuid")
+    logs_collection.create_index("prd_uuid")
+    
+    MONGODB_CONNECTED = True
+    print("✅ MongoDB collections initialized successfully!")
+    
 except Exception as e:
     print(f"❌ MongoDB connection failed: {e}")
-    raise
-
-# Initialize collections
-prd_collection = db["PRD"]
-feature_data_collection = db["feature_data"]
-logs_collection = db["logs"]
-
-# Create indexes for better performance
-prd_collection.create_index("ID", unique=True)
-feature_data_collection.create_index("uuid", unique=True)
-feature_data_collection.create_index("prd_uuid")
-logs_collection.create_index("prd_uuid")
+    print("⚠️  Running in offline mode - API will work but data won't be persisted")
+    print("💡 Check your internet connection and MongoDB Atlas settings")
+    
+    # Set up offline mode
+    MONGODB_CONNECTED = False
+    client = None
+    db = None
+    prd_collection = None
+    feature_data_collection = None
+    logs_collection = None
+    
+    # Create mock collections for offline mode
+    class MockCollection:
+        def __init__(self, name):
+            self.name = name
+            self.data = []
+        
+        def insert_one(self, doc):
+            doc['_id'] = len(self.data) + 1
+            self.data.append(doc)
+            return type('MockResult', (), {'inserted_id': doc['_id']})()
+        
+        def find_one(self, query):
+            for doc in self.data:
+                if all(doc.get(k) == v for k, v in query.items()):
+                    return doc
+            return None
+        
+        def find(self, query=None, projection=None):
+            if query is None:
+                return self.data
+            # Simple mock filtering
+            filtered = []
+            for doc in self.data:
+                if all(doc.get(k) == v for k, v in query.items()):
+                    filtered.append(doc)
+            return filtered
+        
+        def update_one(self, query, update):
+            for i, doc in enumerate(self.data):
+                if all(doc.get(k) == v for k, v in query.items()):
+                    if '$set' in update:
+                        for key, value in update['$set'].items():
+                            doc[key] = value
+                    return type('MockResult', (), {'modified_count': 1})()
+            return type('MockResult', (), {'modified_count': 0})()
+        
+        def delete_one(self, query):
+            for i, doc in enumerate(self.data):
+                if all(doc.get(k) == v for k, v in query.items()):
+                    del self.data[i]
+                    return type('MockResult', (), {'deleted_count': 1})()
+            return type('MockResult', (), {'deleted_count': 0})()
+        
+        def count_documents(self, query):
+            if query is None or query == {}:
+                return len(self.data)
+            count = 0
+            for doc in self.data:
+                if all(doc.get(k) == v for k, v in query.items()):
+                    count += 1
+            return count
+        
+        def create_index(self, field, **kwargs):
+            # Mock index creation
+            pass
+    
+    # Initialize mock collections
+    prd_collection = MockCollection("PRD")
+    feature_data_collection = MockCollection("feature_data")
+    logs_collection = MockCollection("logs")
 
 # Pydantic models
 class PRDBase(BaseModel):
@@ -538,18 +611,33 @@ async def delete_log(uuid: str):
 async def health_check():
     """Health check endpoint"""
     try:
-        # Test MongoDB connection
-        client.admin.command('ping')
-        return {
-            "status": "healthy",
-            "database": "connected",
-            "timestamp": get_current_timestamp().isoformat(),
-            "collections": {
-                "PRD": prd_collection.count_documents({}),
-                "feature_data": feature_data_collection.count_documents({}),
-                "logs": logs_collection.count_documents({})
+        if MONGODB_CONNECTED:
+            # Test MongoDB connection
+            client.admin.command('ping')
+            return {
+                "status": "healthy",
+                "database": "connected",
+                "timestamp": get_current_timestamp().isoformat(),
+                "collections": {
+                    "PRD": prd_collection.count_documents({}),
+                    "feature_data": feature_data_collection.count_documents({}),
+                    "logs": logs_collection.count_documents({})
+                }
             }
-        }
+        else:
+            # Offline mode
+            return {
+                "status": "healthy",
+                "database": "offline",
+                "mode": "mock_data",
+                "timestamp": get_current_timestamp().isoformat(),
+                "collections": {
+                    "PRD": prd_collection.count_documents({}),
+                    "feature_data": feature_data_collection.count_documents({}),
+                    "logs": logs_collection.count_documents({})
+                },
+                "note": "Running in offline mode - data is not persisted"
+            }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")
 
@@ -562,13 +650,26 @@ async def root():
         "version": "1.0.0",
         "status": "running",
         "port": 5000,
+        "database": "connected" if MONGODB_CONNECTED else "offline",
+        "mode": "production" if MONGODB_CONNECTED else "mock_data",
         "collections": ["PRD", "feature_data", "logs"],
-        "docs": "/docs"
+        "docs": "/docs",
+        "note": "Data persistence available" if MONGODB_CONNECTED else "Running in offline mode - data not persisted"
     }
 
 if __name__ == "__main__":
     import uvicorn
     print("🚀 Starting TechJam Backend API on port 5000...")
+    
+    if MONGODB_CONNECTED:
+        print("✅ MongoDB: Connected (Production Mode)")
+    else:
+        print("⚠️  MongoDB: Offline (Mock Data Mode)")
+        print("💡 Data will be stored in memory but not persisted")
+    
     print("📚 API Documentation: http://localhost:5000/docs")
     print("🔍 Health Check: http://localhost:5000/health")
+    print("🌐 API Base URL: http://localhost:5000")
+    print("⏹️  Press Ctrl+C to stop")
+    
     uvicorn.run(app, host="0.0.0.0", port=5000)
