@@ -1,4 +1,4 @@
-import { Table, Button, Popconfirm, Row, Modal, Space, Form, Select, Input } from "antd"
+import { Table, Button, Popconfirm, Row, Modal, Form, Input } from "antd"
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useState } from "react";
@@ -58,22 +58,22 @@ const sampleData = [
 
 const ModalForm = () => {
   return (
-    <Form layout="vertical">
-          <Form.Item
-            name="status"
-            label="Status"
-          >
-            <Select 
-              placeholder="Please select status"
-            >
-            </Select>
-          </Form.Item>        
+    <Form layout="vertical">     
           <Form.Item
             name="name"
             label="Name"
           >
             <Input 
               placeholder="Enter name of PRD" 
+            />
+          </Form.Item>
+          <Form.Item
+            name="description"
+            label="Description"
+          >
+            <Input.TextArea 
+              rows={4} 
+              placeholder="Please enter description" 
             />
           </Form.Item>
     </Form>
@@ -97,7 +97,8 @@ export default function App() {
         <div style={{ padding: 24 }}>
             <h1 style={{"marginTop": 0}}>PRD FORM</h1>
             <div>
-              <Button onClick={() => navigate('/dashboard')}>View Dashboard</Button>
+              <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button>
+              <Button onClick={() => navigate('/logs')}>View Logs</Button>
             </div>
             <Row justify="end" style={{marginBottom: "10px"}}>
               <Button title="Add new PRD" onClick={showModal}>Add New PRD</Button>

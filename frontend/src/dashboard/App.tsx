@@ -76,7 +76,8 @@ export default function Dashboard() {
         <div style={{ padding: 24 }}>
             <h1 style={{"marginTop": 0}}>DASHBOARD</h1>
             <div style={{marginBottom: "20px"}}>
-              <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
+              <Button style={{ marginRight: '10px' }} onClick={() => navigate('/')}>Go to PRD Form</Button>
+              <Button onClick={() => navigate('/logs')}>View Logs</Button>
             </div>
             <Row className="mt-2" justify="space-evenly">
                 <Col span={5}>
