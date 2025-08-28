@@ -9,6 +9,8 @@ A FastAPI-based backend service providing CRUD operations for MongoDB collection
 - **Automatic Logging** - All operations are automatically logged
 - **CORS Support** - Cross-origin requests enabled for frontend integration
 - **Comprehensive API Documentation** - Auto-generated with Swagger UI
+- **Graceful Fallback** - Works in offline mode with mock data when MongoDB is unavailable
+- **Data Migration** - Automatic migration of existing data to include timestamp fields
 
 ## 📊 Database Collections
 
@@ -17,15 +19,15 @@ A FastAPI-based backend service providing CRUD operations for MongoDB collection
 - **Name**: PRD name
 - **Description**: PRD description
 - **Status**: Current status (Draft, Active, Completed, etc.)
-- **created_at**: Creation timestamp
-- **updated_at**: Last update timestamp
+- **created_at**: Creation timestamp (auto-generated if missing)
+- **updated_at**: Last update timestamp (auto-generated if missing)
 
 ### 2. Feature Data Collection
 - **uuid**: Unique UUID identifier
 - **prd_uuid**: Reference to PRD collection
 - **data**: Feature data content (flexible JSON structure)
-- **created_at**: Creation timestamp
-- **updated_at**: Last update timestamp
+- **created_at**: Creation timestamp (auto-generated if missing)
+- **updated_at**: Last update timestamp (auto-generated if missing)
 
 ### 3. Logs Collection
 - **uuid**: Unique UUID identifier
@@ -33,7 +35,7 @@ A FastAPI-based backend service providing CRUD operations for MongoDB collection
 - **action**: Action performed (CREATE, UPDATE, DELETE, etc.)
 - **details**: Detailed description of the action
 - **level**: Log level (INFO, WARNING, ERROR)
-- **timestamp**: Action timestamp
+- **timestamp**: Action timestamp (auto-generated if missing)
 
 ## 🛠️ Installation
 
@@ -45,6 +47,7 @@ A FastAPI-based backend service providing CRUD operations for MongoDB collection
 2. **Set up MongoDB connection:**
    - The connection string is already configured in `main.py`
    - Ensure MongoDB is accessible
+   - **Note**: The system will automatically fall back to mock data if MongoDB is unavailable
 
 3. **Run the application:**
    ```bash
@@ -55,42 +58,99 @@ A FastAPI-based backend service providing CRUD operations for MongoDB collection
 
 ### PRD Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/prd` | Create a new PRD |
-| `GET` | `/prd` | Get all PRDs |
-| `GET` | `/prd/{prd_id}` | Get specific PRD by ID |
-| `PUT` | `/prd/{prd_id}` | Update a PRD |
-| `DELETE` | `/prd/{prd_id}` | Delete a PRD |
+| Method | Endpoint | Description | Response Type |
+|--------|----------|-------------|---------------|
+| `POST` | `/prd` | Create a new PRD | `PRDResponse` (201) |
+| `GET` | `/prd` | Get all PRDs | `List[PRDResponse]` (200) |
+| `GET` | `/prd/{prd_id}` | Get specific PRD by ID | `PRDResponse` (200) |
+| `PUT` | `/prd/{prd_id}` | Update a PRD | `PRDResponse` (200) |
+| `DELETE` | `/prd/{prd_id}` | Delete a PRD | `204 No Content` |
 
 ### Feature Data Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/feature-data` | Create new feature data |
-| `GET` | `/feature-data` | Get all feature data |
-| `GET` | `/feature-data/{uuid}` | Get specific feature data |
-| `GET` | `/feature-data/prd/{prd_uuid}` | Get feature data for specific PRD |
-| `PUT` | `/feature-data/{uuid}` | Update feature data |
-| `DELETE` | `/feature-data/{uuid}` | Delete feature data |
+| Method | Endpoint | Description | Response Type |
+|--------|----------|-------------|---------------|
+| `POST` | `/feature-data` | Create feature data | `FeatureDataResponse` (201) |
+| `GET` | `/feature-data` | Get all feature data | `List[FeatureDataResponse]` (200) |
+| `GET` | `/feature-data/{uuid}` | Get specific feature data | `FeatureDataResponse` (200) |
+| `GET` | `/feature-data/prd/{prd_uuid}` | Get by PRD reference | `List[FeatureDataResponse]` (200) |
+| `PUT` | `/feature-data/{uuid}` | Update feature data | `FeatureDataResponse` (200) |
+| `DELETE` | `/feature-data/{uuid}` | Delete feature data | `204 No Content` |
 
 ### Logs Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `POST` | `/logs` | Create a new log entry |
-| `GET` | `/logs` | Get all logs |
-| `GET` | `/logs/{uuid}` | Get specific log |
-| `GET` | `/logs/prd/{prd_uuid}` | Get logs for specific PRD |
-| `DELETE` | `/logs/{uuid}` | Delete a log entry |
+| Method | Endpoint | Description | Response Type |
+|--------|----------|-------------|---------------|
+| `POST` | `/logs` | Create log entry | `LogResponse` (201) |
+| `GET` | `/logs` | Get all logs | `List[LogResponse]` (200) |
+| `GET` | `/logs/{uuid}` | Get specific log | `LogResponse` (200) |
+| `GET` | `/logs/prd/{prd_uuid}` | Get by PRD reference | `List[LogResponse]` (200) |
+| `DELETE` | `/logs/{uuid}` | Delete log entry | `204 No Content` |
 
 ### Utility Endpoints
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/health` | Health check and database status |
-| `GET` | `/` | Root endpoint with API information |
-| `GET` | `/docs` | Interactive API documentation (Swagger UI) |
+| Method | Endpoint | Description | Response Type |
+|--------|----------|-------------|---------------|
+| `GET` | `/health` | Health check and database status | `HealthResponse` (200) |
+| `GET` | `/` | Root endpoint with API information | `RootResponse` (200) |
+| `GET` | `/docs` | Interactive API documentation (Swagger UI) | HTML page |
+
+## 📝 API Response Models
+
+### PRDResponse
+```json
+{
+  "ID": "uuid-string",
+  "Name": "PRD Name",
+  "Description": "PRD Description", 
+  "Status": "Draft|Active|Completed",
+  "created_at": "2025-01-27T10:30:00",
+  "updated_at": "2025-01-27T10:30:00"
+}
+```
+
+### FeatureDataResponse
+```json
+{
+  "uuid": "uuid-string",
+  "prd_uuid": "prd-uuid-reference",
+  "data": {
+    "feature_type": "authentication",
+    "security_level": "high",
+    "technologies": ["JWT", "bcrypt"]
+  },
+  "created_at": "2025-01-27T10:30:00",
+  "updated_at": "2025-01-27T10:30:00"
+}
+```
+
+### LogResponse
+```json
+{
+  "uuid": "uuid-string",
+  "prd_uuid": "prd-uuid-reference",
+  "action": "CREATE|UPDATE|DELETE",
+  "details": "Action description",
+  "level": "INFO|WARNING|ERROR",
+  "timestamp": "2025-01-27T10:30:00"
+}
+```
+
+### HealthResponse
+```json
+{
+  "status": "healthy",
+  "database": "connected|offline",
+  "mode": "production|mock_data",
+  "timestamp": "2025-01-27T10:30:00",
+  "collections": {
+    "PRD": 5,
+    "feature_data": 12,
+    "logs": 25
+  },
+  "note": "Additional information about the system state"
+}
+```
 
 ## 📝 API Usage Examples
 
@@ -105,12 +165,24 @@ curl -X POST "http://localhost:5000/prd" \
   }'
 ```
 
+**Response (201 Created):**
+```json
+{
+  "ID": "ae5f82ac-e164-4e5f-8b3a-123456789abc",
+  "Name": "User Authentication System",
+  "Description": "Implement secure user login and registration",
+  "Status": "Draft",
+  "created_at": "2025-01-27T10:30:00",
+  "updated_at": "2025-01-27T10:30:00"
+}
+```
+
 ### Create Feature Data
 ```bash
 curl -X POST "http://localhost:5000/feature-data" \
   -H "Content-Type: application/json" \
   -d '{
-    "prd_uuid": "your-prd-uuid-here",
+    "prd_uuid": "ae5f82ac-e164-4e5f-8b3a-123456789abc",
     "data": {
       "feature_type": "authentication",
       "security_level": "high",
@@ -119,18 +191,59 @@ curl -X POST "http://localhost:5000/feature-data" \
   }'
 ```
 
+**Response (201 Created):**
+```json
+{
+  "uuid": "f8b3a123-4567-89ab-cdef-123456789abc",
+  "prd_uuid": "ae5f82ac-e164-4e5f-8b3a-123456789abc",
+  "data": {
+    "feature_type": "authentication",
+    "security_level": "high",
+    "technologies": ["JWT", "bcrypt"]
+  },
+  "created_at": "2025-01-27T10:30:00",
+  "updated_at": "2025-01-27T10:30:00"
+}
+```
+
 ### Get All PRDs
 ```bash
 curl -X GET "http://localhost:5000/prd"
 ```
 
+**Response (200 OK):**
+```json
+[
+  {
+    "ID": "ae5f82ac-e164-4e5f-8b3a-123456789abc",
+    "Name": "User Authentication System",
+    "Description": "Implement secure user login and registration",
+    "Status": "Draft",
+    "created_at": "2025-01-27T10:30:00",
+    "updated_at": "2025-01-27T10:30:00"
+  }
+]
+```
+
 ### Update PRD Status
 ```bash
-curl -X PUT "http://localhost:5000/prd/your-prd-uuid" \
+curl -X PUT "http://localhost:5000/prd/ae5f82ac-e164-4e5f-8b3a-123456789abc" \
   -H "Content-Type: application/json" \
   -d '{
     "Status": "Active"
   }'
+```
+
+**Response (200 OK):**
+```json
+{
+  "ID": "ae5f82ac-e164-4e5f-8b3a-123456789abc",
+  "Name": "User Authentication System",
+  "Description": "Implement secure user login and registration",
+  "Status": "Active",
+  "created_at": "2025-01-27T10:30:00",
+  "updated_at": "2025-01-27T10:35:00"
+}
 ```
 
 ## 🔗 Integration with Frontend and LangGraph
@@ -151,7 +264,26 @@ const createPRD = async (prdData) => {
     },
     body: JSON.stringify(prdData)
   });
-  return response.json();
+  
+  if (response.ok) {
+    const result = await response.json();
+    console.log('PRD created:', result);
+    return result;
+  } else {
+    throw new Error(`Failed to create PRD: ${response.statusText}`);
+  }
+};
+
+// Example: Get all PRDs
+const getAllPRDs = async () => {
+  const response = await fetch('http://localhost:5000/prd');
+  if (response.ok) {
+    const prds = await response.json();
+    console.log('PRDs retrieved:', prds);
+    return prds;
+  } else {
+    throw new Error(`Failed to retrieve PRDs: ${response.statusText}`);
+  }
 };
 ```
 
@@ -168,17 +300,30 @@ def store_feature_analysis(prd_uuid, analysis_data):
             'data': analysis_data
         }
     )
-    return response.json()
+    
+    if response.status_code == 201:
+        result = response.json()
+        print(f"Feature data stored: {result['uuid']}")
+        return result
+    else:
+        raise Exception(f"Failed to store feature data: {response.status_code}")
 ```
 
 ## 🚨 Error Handling
 
-The API provides comprehensive error handling:
+The API provides comprehensive error handling with proper HTTP status codes:
 
-- **400 Bad Request**: Invalid input data
+- **400 Bad Request**: Invalid input data or validation errors
 - **404 Not Found**: Resource not found
 - **500 Internal Server Error**: Server-side errors
-- **Validation Errors**: Automatic Pydantic validation
+- **Validation Errors**: Automatic Pydantic validation with detailed error messages
+
+### Error Response Format
+```json
+{
+  "detail": "Error description message"
+}
+```
 
 ## 📊 Automatic Logging
 
@@ -195,6 +340,7 @@ Every CRUD operation automatically creates log entries:
 - **Host**: 0.0.0.0 (accessible from any IP)
 - **CORS**: Enabled for all origins
 - **MongoDB**: Connection string configured in main.py
+- **Fallback Mode**: Automatic mock data when MongoDB is unavailable
 
 ## 🚀 Running the Application
 
@@ -220,6 +366,7 @@ Every CRUD operation automatically creates log entries:
 - **Connection Pooling**: Efficient database connections
 - **Async Operations**: FastAPI's async capabilities
 - **Automatic Validation**: Pydantic model validation
+- **Data Migration**: Automatic timestamp field addition
 
 ## 🔒 Security Considerations
 
@@ -236,6 +383,7 @@ Every CRUD operation automatically creates log entries:
    - Check MongoDB connection string
    - Verify network connectivity
    - Check authentication credentials
+   - **Note**: System will automatically run in offline mode
 
 2. **Port Already in Use**
    - Change port in main.py
@@ -244,6 +392,10 @@ Every CRUD operation automatically creates log entries:
 3. **Import Errors**
    - Install all requirements: `pip install -r requirements.txt`
    - Check Python version compatibility
+
+4. **Response Validation Errors**
+   - The system automatically adds missing timestamp fields
+   - Check that all required fields are provided in requests
 
 ### Getting Help
 
@@ -260,3 +412,16 @@ Every CRUD operation automatically creates log entries:
 - **Monitoring**: Prometheus metrics and Grafana dashboards
 - **Webhooks**: Real-time notifications for data changes
 - **Batch Operations**: Bulk CRUD operations for efficiency
+
+## 📋 System Status
+
+The backend automatically detects and handles:
+
+- **MongoDB Available**: Full production mode with data persistence
+- **MongoDB Unavailable**: Offline mode with mock data (fully functional API)
+- **Data Migration**: Automatic addition of timestamp fields to existing data
+- **Error Recovery**: Graceful fallbacks for all operations
+
+---
+
+**Note**: This system is designed for production use with automatic fallback capabilities. All CRUD operations work identically whether connected to MongoDB or running in offline mode.

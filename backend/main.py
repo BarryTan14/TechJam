@@ -96,6 +96,20 @@ except Exception as e:
                     return type('MockResult', (), {'deleted_count': 1})()
             return type('MockResult', (), {'deleted_count': 0})()
         
+        def delete_many(self, query):
+            deleted_count = 0
+            indices_to_delete = []
+            for i, doc in enumerate(self.data):
+                if all(doc.get(k) == v for k, v in query.items()):
+                    indices_to_delete.append(i)
+                    deleted_count += 1
+            
+            # Delete in reverse order to avoid index shifting
+            for i in reversed(indices_to_delete):
+                del self.data[i]
+            
+            return type('MockResult', (), {'deleted_count': deleted_count})()
+        
         def count_documents(self, query):
             if query is None or query == {}:
                 return len(self.data)
@@ -104,6 +118,13 @@ except Exception as e:
                 if all(doc.get(k) == v for k, v in query.items()):
                     count += 1
             return count
+        
+        def sort(self, field, direction=1):
+            # Simple sorting for mock collection
+            if field == "timestamp":
+                # Sort by timestamp if it exists, otherwise keep original order
+                self.data.sort(key=lambda x: x.get(field, 0), reverse=(direction == -1))
+            return self
         
         def create_index(self, field, **kwargs):
             # Mock index creation
@@ -114,9 +135,81 @@ except Exception as e:
     feature_data_collection = MockCollection("feature_data")
     logs_collection = MockCollection("logs")
 
+# Data migration function
+def migrate_existing_data():
+    """Migrate existing data to include timestamp fields"""
+    try:
+        if not MONGODB_CONNECTED:
+            return  # Skip migration in offline mode
+        
+        current_time = get_current_timestamp()
+        migrated_count = 0
+        
+        # Migrate PRDs
+        prds_without_timestamps = prd_collection.find({
+            "$or": [
+                {"created_at": {"$exists": False}},
+                {"updated_at": {"$exists": False}}
+            ]
+        })
+        
+        for prd in prds_without_timestamps:
+            update_data = {}
+            if 'created_at' not in prd:
+                update_data['created_at'] = current_time
+            if 'updated_at' not in prd:
+                update_data['updated_at'] = current_time
+            
+            if update_data:
+                prd_collection.update_one(
+                    {"_id": prd["_id"]},
+                    {"$set": update_data}
+                )
+                migrated_count += 1
+        
+        # Migrate feature data
+        features_without_timestamps = feature_data_collection.find({
+            "$or": [
+                {"created_at": {"$exists": False}},
+                {"updated_at": {"$exists": False}}
+            ]
+        })
+        
+        for feature in features_without_timestamps:
+            update_data = {}
+            if 'created_at' not in feature:
+                update_data['created_at'] = current_time
+            if 'updated_at' not in feature:
+                update_data['updated_at'] = current_time
+            
+            if update_data:
+                feature_data_collection.update_one(
+                    {"_id": feature["_id"]},
+                    {"$set": update_data}
+                )
+                migrated_count += 1
+        
+        # Migrate logs
+        logs_without_timestamps = logs_collection.find({
+            "timestamp": {"$exists": False}
+        })
+        
+        for log in logs_without_timestamps:
+            logs_collection.update_one(
+                {"_id": log["_id"]},
+                {"$set": {"timestamp": current_time}}
+            )
+            migrated_count += 1
+        
+        if migrated_count > 0:
+            print(f"✅ Migrated {migrated_count} documents to include timestamp fields")
+        
+    except Exception as e:
+        print(f"⚠️  Data migration failed: {e}")
+        # Continue without migration
+
 # Run data migration for existing data
-if 'migrate_existing_data' in globals():
-    migrate_existing_data()
+migrate_existing_data()
 
 # Pydantic models
 class PRDBase(BaseModel):
@@ -206,78 +299,6 @@ def ensure_timestamps(data: dict) -> dict:
         data['timestamp'] = current_time
     
     return data
-
-def migrate_existing_data():
-    """Migrate existing data to include timestamp fields"""
-    try:
-        if not MONGODB_CONNECTED:
-            return  # Skip migration in offline mode
-        
-        current_time = get_current_timestamp()
-        migrated_count = 0
-        
-        # Migrate PRDs
-        prds_without_timestamps = prd_collection.find({
-            "$or": [
-                {"created_at": {"$exists": False}},
-                {"updated_at": {"$exists": False}}
-            ]
-        })
-        
-        for prd in prds_without_timestamps:
-            update_data = {}
-            if 'created_at' not in prd:
-                update_data['created_at'] = current_time
-            if 'updated_at' not in prd:
-                update_data['updated_at'] = current_time
-            
-            if update_data:
-                prd_collection.update_one(
-                    {"_id": prd["_id"]},
-                    {"$set": update_data}
-                )
-                migrated_count += 1
-        
-        # Migrate feature data
-        features_without_timestamps = feature_data_collection.find({
-            "$or": [
-                {"created_at": {"$exists": False}},
-                {"updated_at": {"$exists": False}}
-            ]
-        })
-        
-        for feature in features_without_timestamps:
-            update_data = {}
-            if 'created_at' not in feature:
-                update_data['created_at'] = current_time
-            if 'updated_at' not in feature:
-                update_data['updated_at'] = current_time
-            
-            if update_data:
-                feature_data_collection.update_one(
-                    {"_id": feature["_id"]},
-                    {"$set": update_data}
-                )
-                migrated_count += 1
-        
-        # Migrate logs
-        logs_without_timestamps = logs_collection.find({
-            "timestamp": {"$exists": False}
-        })
-        
-        for log in logs_without_timestamps:
-            logs_collection.update_one(
-                {"_id": log["_id"]},
-                {"$set": {"timestamp": current_time}}
-            )
-            migrated_count += 1
-        
-        if migrated_count > 0:
-            print(f"✅ Migrated {migrated_count} documents to include timestamp fields")
-        
-    except Exception as e:
-        print(f"⚠️  Data migration failed: {e}")
-        # Continue without migration
 
 # PRD CRUD Operations
 @app.post("/prd", response_model=PRDResponse, status_code=status.HTTP_201_CREATED)
