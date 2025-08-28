@@ -1,4 +1,4 @@
-import { Card, Row, Col, Table, Input, Collapse, CollapseProps, Button } from 'antd';
+import { Card, Row, Col, Table, Input, Collapse, CollapseProps, Button, Divider } from 'antd';
 import { ResponsiveChoropleth } from '@nivo/geo'
 import countries from '../world_countries.json'
 import { useState } from 'react';
@@ -41,6 +41,11 @@ const CollapsableFilter = () => {
     },
     {
         key: '3',
+        label: 'Status',
+        children: <></>,
+    },
+    {
+        key: '4',
         label: 'Others',
         children: <></>,
     },
@@ -69,7 +74,7 @@ export default function Dashboard() {
 
     return (
         <div style={{ padding: 24 }}>
-            <h1 className='text-3xl font-extrabold' style={{"marginTop": 0}}>DASHBOARD</h1>
+            <h1 style={{"marginTop": 0}}>DASHBOARD</h1>
             <div style={{marginBottom: "20px"}}>
               <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
             </div>
@@ -122,12 +127,14 @@ export default function Dashboard() {
                             backgroundColor: '#f9f9f9',
                             boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
                         }}>
-                            Here will be where the data output be at
+                            Analysis HERE
                         </p>
                     </Card>
                 </Col>
                 <Col span={5}>
-                    <Card title="Feature Description">
+                    <Card>
+                        <h3>PRD</h3>
+                        <Divider></Divider>
                         <p
                         style={{
                             border: '0.5px solid #333',
@@ -137,7 +144,21 @@ export default function Dashboard() {
                             backgroundColor: '#f9f9f9',
                             boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
                         }}>
-                            Here will be where the feature description be at
+                            PRD description HERE
+                        </p>
+                        <div style={{marginTop:"50px", marginBottom:"50px"}}></div>
+                        <h3>Feature</h3>
+                        <Divider></Divider>
+                        <p
+                        style={{
+                            border: '0.5px solid #333',
+                            borderRadius: '8px',
+                            padding: '8px',
+                            maxWidth: '100%',
+                            backgroundColor: '#f9f9f9',
+                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
+                        }}>
+                            Feature description HERE
                         </p>
                     </Card>
                 </Col>

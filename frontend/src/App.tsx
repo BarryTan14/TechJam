@@ -95,7 +95,7 @@ export default function App() {
 
     return (
         <div style={{ padding: 24 }}>
-            <h1 className='text-3xl font-extrabold' style={{"marginTop": 0}}>PRD FORM</h1>
+            <h1 style={{"marginTop": 0}}>PRD FORM</h1>
             <div>
               <Button onClick={() => navigate('/dashboard')}>View Dashboard</Button>
             </div>
