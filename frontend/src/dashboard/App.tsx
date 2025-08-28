@@ -60,24 +60,41 @@ const CollapsableFilter = () => {
 const sampleHeatMapData = 
     [
         {
-            "id": "AFG",
+            "id": "USA",
             "value": 863184
         },
         {
-            "id": "AGO",
-            "value": 52326
+            "id": "Alaska",
+            "value": 50000
         },
+        {
+            "id": "Hawaii",
+            "value": 450000
+        }
     ]
 
+const signOut = () => {
+  localStorage.removeItem("username")
+  window.location.href = "../login" 
+}
+
 export default function Dashboard() {
+    if (!localStorage.getItem("username")) {
+      window.location.href = "./login"
+      return
+    }
+
     const navigate = useNavigate();
 
     return (
         <div style={{ padding: 24 }}>
-            <h1 style={{"marginTop": 0}}>DASHBOARD</h1>
+            <div style={{display: "flex"}}>
+                <h1 style={{"marginTop": 0}}>DASHBOARD</h1>
+                <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
+            </div>
             <div style={{marginBottom: "20px"}}>
               <Button style={{ marginRight: '10px' }} onClick={() => navigate('/')}>Go to PRD Form</Button>
-              <Button onClick={() => navigate('/logs')}>View Logs</Button>
+              <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
             </div>
             <Row className="mt-2" justify="space-evenly">
                 <Col span={5}>
@@ -117,6 +134,8 @@ export default function Dashboard() {
                                     symbolSize: 18
                                 }
                             ]}
+                            projectionScale={255}
+                            projectionTranslation={[1.48, 1.15]}
                         />
                         </div>
                         <p

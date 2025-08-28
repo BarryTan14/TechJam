@@ -56,6 +56,11 @@ const sampleData = [
     },
 ]
 
+const signOut = () => {
+  localStorage.removeItem("username")
+  window.location.href = "../login" 
+}
+
 const ModalForm = () => {
   return (
     <Form layout="vertical">     
@@ -81,6 +86,11 @@ const ModalForm = () => {
 }
 
 export default function App() {
+    if (!localStorage.getItem("username")) {
+      window.location.href = "./login"
+      return
+    }
+
     const navigate = useNavigate();
     const [openModal, setOpenModal] = useState(false)
 
@@ -95,10 +105,13 @@ export default function App() {
 
     return (
         <div style={{ padding: 24 }}>
-            <h1 style={{"marginTop": 0}}>PRD FORM</h1>
+            <div style={{display: "flex"}}>
+              <h1 style={{"marginTop": 0}}>PRD FORM</h1>
+              <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
+            </div>
             <div>
               <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button>
-              <Button onClick={() => navigate('/logs')}>View Logs</Button>
+              <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
             </div>
             <Row justify="end" style={{marginBottom: "10px"}}>
               <Button title="Add new PRD" onClick={showModal}>Add New PRD</Button>
