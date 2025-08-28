@@ -32,11 +32,25 @@ const sampleData = [
     },
 ]
 
+const signOut = () => {
+  localStorage.removeItem("username")
+  window.location.href = "../login" 
+}
+
 export default function Logs() {
+    if (!localStorage.getItem("username")) {
+      window.location.href = "./login"
+      return
+    }
+
     const navigate = useNavigate();
+
     return (
         <div style={{ padding: 24 }}>
-            <h1 style={{"marginTop": 0}}>LOGS</h1>
+            <div style={{display: "flex"}}>
+                <h1 style={{"marginTop": 0}}>LOGS</h1>
+                <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
+            </div>
             <div style={{"marginBottom": "10px"}}>
               <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button>
               <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
