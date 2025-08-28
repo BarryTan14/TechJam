@@ -10,6 +10,7 @@ from .reasoning_generator import ReasoningGeneratorAgent
 from .quality_assurance import QualityAssuranceAgent
 from .prd_parser import PRDParserAgent
 from .us_state_compliance import USStateComplianceAgent
+from .non_compliant_states_analyzer import NonCompliantStatesAnalyzerAgent
 
 __all__ = [
     'AgentOutput',
@@ -23,5 +24,6 @@ __all__ = [
     'ReasoningGeneratorAgent',
     'QualityAssuranceAgent',
     'PRDParserAgent',
-    'USStateComplianceAgent'
+    'USStateComplianceAgent',
+    'NonCompliantStatesAnalyzerAgent'
 ]

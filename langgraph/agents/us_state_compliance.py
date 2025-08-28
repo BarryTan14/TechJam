@@ -165,7 +165,9 @@ Consider these key factors:
 - Data retention policies
 - User rights (access, deletion, portability)
 
-Return your response as a JSON object with this structure:
+IMPORTANT: You must analyze ALL 50 US states and return a complete JSON response.
+
+Return your response as a JSON object with this EXACT structure:
 {{
     "state_compliance": [
         {{
@@ -176,6 +178,15 @@ Return your response as a JSON object with this structure:
             "risk_level": "High",
             "required_actions": ["Implement consent management", "Add data deletion rights"],
             "notes": "California has strict privacy laws requiring explicit consent and user rights"
+        }},
+        {{
+            "state_code": "VA",
+            "state_name": "Virginia",
+            "is_compliant": true,
+            "non_compliant_regulations": [],
+            "risk_level": "Low",
+            "required_actions": [],
+            "notes": "Feature complies with Virginia's data protection requirements"
         }}
     ],
     "non_compliant_states": ["CA", "NY", "IL"],
@@ -184,7 +195,19 @@ Return your response as a JSON object with this structure:
     "recommendations": ["Implement state-specific consent mechanisms", "Add data minimization controls"]
 }}
 
-Focus on states with comprehensive privacy laws like California (CCPA), Virginia (VCDPA), Colorado (CPA), etc.
+Key states to focus on with comprehensive privacy laws:
+- California (CCPA/CPRA)
+- Virginia (VCDPA)
+- Colorado (CPA)
+- Connecticut (CTDPA)
+- Utah (UCPA)
+- Florida (FDBR)
+- Texas (TDPSA)
+- New York (NY SHIELD Act)
+- Illinois (BIPA)
+- Washington (My Health My Data Act)
+
+Ensure your response is valid JSON and includes all 50 states in the state_compliance array.
 """
 
         print(f"🤖 Using LLM for US state compliance analysis...")

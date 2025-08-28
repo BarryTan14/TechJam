@@ -27,10 +27,12 @@ from agents import (
     QualityAssuranceAgent,
     PRDParserAgent,
     USStateComplianceAgent,
+    NonCompliantStatesAnalyzerAgent,
     AgentOutput,
     ExtractedFeature,
     FeatureComplianceResult,
-    PRDAnalysisResult
+    PRDAnalysisResult,
+    USStateCompliance
 )
 
 @dataclass
@@ -54,6 +56,7 @@ class WorkflowState:
     overall_confidence_score: float = 0.0
     critical_compliance_issues: List[str] = None
     summary_recommendations: List[str] = None
+    non_compliant_states_dict: Dict[str, Dict[str, Any]] = None
     
     # Workflow metadata
     workflow_id: str = ""
@@ -90,6 +93,7 @@ class ComplianceWorkflow:
         self.reasoning_generator = ReasoningGeneratorAgent(self.llm)
         self.quality_assurance = QualityAssuranceAgent(self.llm)
         self.us_state_compliance = USStateComplianceAgent(self.llm)
+        self.non_compliant_states_analyzer = NonCompliantStatesAnalyzerAgent(self.llm)
     
     def setup_llm(self):
         """Setup LLM with fallback models"""
@@ -236,9 +240,24 @@ class ComplianceWorkflow:
             reasoning = reasoning_generator_output.analysis_result.get("executive_summary", "")
             recommendations = quality_assurance_output.analysis_result.get("final_recommendations", [])
             
-            # US State compliance results
+                        # US State compliance results
             us_state_analysis = us_state_compliance_output.analysis_result
             non_compliant_states = us_state_analysis.get("non_compliant_states", [])
+            
+            # Convert US state compliance data to USStateCompliance objects
+            us_state_compliance_list = []
+            state_compliance_data = us_state_analysis.get("state_compliance", [])
+            for state_data in state_compliance_data:
+                state_compliance = USStateCompliance(
+                    state_name=state_data.get("state_name", ""),
+                    state_code=state_data.get("state_code", ""),
+                    is_compliant=state_data.get("is_compliant", True),
+                    non_compliant_regulations=state_data.get("non_compliant_regulations", []),
+                    risk_level=state_data.get("risk_level", "Low"),
+                    required_actions=state_data.get("required_actions", []),
+                    notes=state_data.get("notes", "")
+                )
+                us_state_compliance_list.append(state_compliance)
             
         except Exception as e:
             print(f"⚠️  Error in feature analysis: {e}")
@@ -250,6 +269,24 @@ class ComplianceWorkflow:
             reasoning = f"Analysis incomplete due to error: {str(e)}"
             recommendations = ["Review feature manually", "Check system configuration"]
             non_compliant_states = ["California", "Virginia"]
+            
+            # Create fallback US state compliance data
+            us_state_compliance_list = []
+            fallback_states = [
+                {"state_code": "CA", "state_name": "California", "is_compliant": False},
+                {"state_code": "VA", "state_name": "Virginia", "is_compliant": False}
+            ]
+            for state_data in fallback_states:
+                state_compliance = USStateCompliance(
+                    state_name=state_data["state_name"],
+                    state_code=state_data["state_code"],
+                    is_compliant=state_data["is_compliant"],
+                    non_compliant_regulations=["CCPA", "VCDPA"],
+                    risk_level="High",
+                    required_actions=["Implement consent mechanisms", "Add data deletion rights"],
+                    notes="Fallback compliance data due to analysis error"
+                )
+                us_state_compliance_list.append(state_compliance)
         
         processing_time = (datetime.now() - start_time).total_seconds()
         
@@ -262,7 +299,7 @@ class ComplianceWorkflow:
             requires_human_review=requires_human_review,
             reasoning=reasoning,
             recommendations=recommendations,
-            us_state_compliance=[],
+            us_state_compliance=us_state_compliance_list,
             non_compliant_states=non_compliant_states,
             processing_time=processing_time,
             timestamp=datetime.now().isoformat()
@@ -341,8 +378,14 @@ class ComplianceWorkflow:
         unique_recommendations = list(set(all_recommendations))
         state.summary_recommendations = unique_recommendations[:10]  # Top 10 recommendations
         
+        # Generate non-compliant states dictionary using dedicated agent
+        non_compliant_states_analysis = self.non_compliant_states_analyzer.analyze_non_compliant_states(state.feature_compliance_results)
+        state.non_compliant_states_dict = non_compliant_states_analysis.analysis_result.get("non_compliant_states_dict", {})
+        
         state.end_time = datetime.now().isoformat()
         state.total_processing_time = (datetime.now() - datetime.fromisoformat(state.start_time)).total_seconds()
+    
+
     
     def save_workflow_results(self, state: WorkflowState):
         """Save workflow results to output.json"""
@@ -384,7 +427,8 @@ class ComplianceWorkflow:
                     "overall_risk_level": state.overall_risk_level,
                     "overall_confidence_score": state.overall_confidence_score,
                     "critical_compliance_issues": state.critical_compliance_issues,
-                    "summary_recommendations": state.summary_recommendations
+                    "summary_recommendations": state.summary_recommendations,
+                    "non_compliant_states_dict": state.non_compliant_states_dict
                 }
             }
             
@@ -516,7 +560,19 @@ def main():
             print(f"     States: {', '.join(result.non_compliant_states)}")
         print()
     
-    print(f"💡 Top Recommendations:")
+    # Display non-compliant states dictionary
+    if final_state.non_compliant_states_dict:
+        print(f"\n🇺🇸 Non-Compliant States Analysis:")
+        print("=" * 50)
+        for state_code, state_data in final_state.non_compliant_states_dict.items():
+            print(f"\n📍 {state_code} - {state_data['state_name']}")
+            print(f"   Risk Score: {state_data['risk_score']:.2f} ({state_data['risk_level'].upper()})")
+            print(f"   Non-compliant Features: {', '.join(state_data['non_compliant_features'])}")
+            print(f"   Reasoning: {state_data['reasoning'][:100]}...")
+            if state_data['required_actions']:
+                print(f"   Required Actions: {', '.join(state_data['required_actions'][:3])}")
+    
+    print(f"\n💡 Top Recommendations:")
     for rec in final_state.summary_recommendations[:5]:
         print(f"   • {rec}")
     

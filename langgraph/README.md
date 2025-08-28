@@ -5,9 +5,18 @@ A comprehensive automated geo-compliance detection system that analyzes Product 
 ## 🚀 Quick Start
 
 ### 1. Install Dependencies
+
+**Basic Installation (Recommended):**
+```bash
+pip install google-generativeai
+```
+
+**Full Installation (Advanced):**
 ```bash
 pip install -r requirements.txt
 ```
+
+**Note:** If you encounter dependency conflicts, use the basic installation which provides all core functionality.
 
 ### 2. Set Up API Key (Required)
 Create a `.env` file in the langgraph directory with your Gemini API key:
@@ -24,9 +33,36 @@ python langgraph_workflow.py
 
 That's it! The system will prompt you for PRD details and analyze it for compliance.
 
+## 🔧 Installation Options
+
+### Option 1: Virtual Environment (Recommended)
+```bash
+# Create virtual environment
+python -m venv venv
+
+# Activate (Windows)
+venv\Scripts\activate
+
+# Activate (Unix/Mac)
+source venv/bin/activate
+
+# Install basic packages
+pip install google-generativeai
+```
+
+### Option 2: Basic Installation
+```bash
+pip install google-generativeai
+```
+
+### Option 3: Full Installation
+```bash
+pip install -r requirements.txt
+```
+
 ## 📋 What It Does
 
-The system uses 7 specialized AI agents to analyze your PRDs:
+The system uses 8 specialized AI agents to analyze your PRDs:
 
 1. **📋 PRD Parser** - Extracts individual features from PRD documents using AI
 2. **🔍 Feature Analyzer** - Extracts compliance-relevant information from each feature using AI
@@ -35,6 +71,7 @@ The system uses 7 specialized AI agents to analyze your PRDs:
 5. **💭 Reasoning Generator** - Produces clear justifications and recommendations using AI
 6. **🔍 Quality Assurance** - Validates results and provides final assessment using AI
 7. **🇺🇸 US State Compliance** - Analyzes compliance for each US state (50 states) using AI
+8. **🔍 Non-Compliant States Analyzer** - Generates comprehensive non-compliant states dictionary with risk scores and reasoning using AI
 
 ## 📊 Output
 
@@ -120,6 +157,7 @@ langgraph/
 │   ├── reasoning_generator.py # Reasoning generation
 │   ├── quality_assurance.py # Quality validation
 │   ├── us_state_compliance.py # US state compliance analysis
+│   ├── non_compliant_states_analyzer.py # Non-compliant states dictionary generation
 │   └── models.py            # Data models
 ├── main.py                  # Alternative API interface
 ├── requirements.txt         # Dependencies
@@ -133,16 +171,22 @@ langgraph/
 
 ### Common Issues
 
-1. **No API Key**: System will exit with clear error message
-2. **Invalid API Key**: Check your API key at https://makersuite.google.com/app/apikey
-3. **Network Issues**: Ensure stable internet connection for LLM calls
-4. **Import Errors**: Run `pip install -r requirements.txt`
+1. **Dependency Conflicts**: Use basic installation: `pip install google-generativeai`
+2. **No API Key**: System will exit with clear error message
+3. **Invalid API Key**: Check your API key at https://makersuite.google.com/app/apikey
+4. **Network Issues**: Ensure stable internet connection for LLM calls
+5. **Import Errors**: Run `pip install google-generativeai`
 
-### Getting Help
+### What Works Without Full Dependencies
 
-- Check console output for detailed error messages
-- Review generated JSON files for analysis results
-- Ensure your API key is correctly set in `.env` file
+The basic installation provides:
+- ✅ All 8 agents (PRD Parser, Feature Analyzer, Regulation Matcher, Risk Assessor, Reasoning Generator, Quality Assurance, US State Compliance, Non-Compliant States Analyzer)
+- ✅ LLM integration with Gemini AI
+- ✅ Fallback pattern matching
+- ✅ Detailed logging and output tracking
+- ✅ JSON output files with complete audit trails
+- ✅ Processing time tracking
+- ✅ Confidence scoring
 
 ## 🎯 Use Cases
 
