@@ -114,6 +114,10 @@ except Exception as e:
     feature_data_collection = MockCollection("feature_data")
     logs_collection = MockCollection("logs")
 
+# Run data migration for existing data
+if 'migrate_existing_data' in globals():
+    migrate_existing_data()
+
 # Pydantic models
 class PRDBase(BaseModel):
     Name: str = Field(..., description="PRD Name")
@@ -130,8 +134,8 @@ class PRDUpdate(BaseModel):
 
 class PRDResponse(PRDBase):
     ID: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 class FeatureDataBase(BaseModel):
     prd_uuid: str = Field(..., description="UUID from PRD table")
@@ -146,8 +150,8 @@ class FeatureDataUpdate(BaseModel):
 
 class FeatureDataResponse(FeatureDataBase):
     uuid: str
-    created_at: datetime
-    updated_at: datetime
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 class LogBase(BaseModel):
     prd_uuid: str = Field(..., description="UUID from PRD table")
@@ -160,7 +164,7 @@ class LogCreate(LogBase):
 
 class LogResponse(LogBase):
     uuid: str
-    timestamp: datetime
+    timestamp: Optional[datetime] = None
 
 # FastAPI app
 app = FastAPI(
@@ -184,6 +188,96 @@ def generate_uuid():
 
 def get_current_timestamp():
     return datetime.utcnow()
+
+def ensure_timestamps(data: dict) -> dict:
+    """Ensure all required timestamp fields are present"""
+    current_time = get_current_timestamp()
+    
+    # Ensure created_at exists
+    if 'created_at' not in data or data['created_at'] is None:
+        data['created_at'] = current_time
+    
+    # Ensure updated_at exists
+    if 'updated_at' not in data or data['updated_at'] is None:
+        data['updated_at'] = current_time
+    
+    # For logs, ensure timestamp exists
+    if 'timestamp' not in data or data['timestamp'] is None:
+        data['timestamp'] = current_time
+    
+    return data
+
+def migrate_existing_data():
+    """Migrate existing data to include timestamp fields"""
+    try:
+        if not MONGODB_CONNECTED:
+            return  # Skip migration in offline mode
+        
+        current_time = get_current_timestamp()
+        migrated_count = 0
+        
+        # Migrate PRDs
+        prds_without_timestamps = prd_collection.find({
+            "$or": [
+                {"created_at": {"$exists": False}},
+                {"updated_at": {"$exists": False}}
+            ]
+        })
+        
+        for prd in prds_without_timestamps:
+            update_data = {}
+            if 'created_at' not in prd:
+                update_data['created_at'] = current_time
+            if 'updated_at' not in prd:
+                update_data['updated_at'] = current_time
+            
+            if update_data:
+                prd_collection.update_one(
+                    {"_id": prd["_id"]},
+                    {"$set": update_data}
+                )
+                migrated_count += 1
+        
+        # Migrate feature data
+        features_without_timestamps = feature_data_collection.find({
+            "$or": [
+                {"created_at": {"$exists": False}},
+                {"updated_at": {"$exists": False}}
+            ]
+        })
+        
+        for feature in features_without_timestamps:
+            update_data = {}
+            if 'created_at' not in feature:
+                update_data['created_at'] = current_time
+            if 'updated_at' not in feature:
+                update_data['updated_at'] = current_time
+            
+            if update_data:
+                feature_data_collection.update_one(
+                    {"_id": feature["_id"]},
+                    {"$set": update_data}
+                )
+                migrated_count += 1
+        
+        # Migrate logs
+        logs_without_timestamps = logs_collection.find({
+            "timestamp": {"$exists": False}
+        })
+        
+        for log in logs_without_timestamps:
+            logs_collection.update_one(
+                {"_id": log["_id"]},
+                {"$set": {"timestamp": current_time}}
+            )
+            migrated_count += 1
+        
+        if migrated_count > 0:
+            print(f"✅ Migrated {migrated_count} documents to include timestamp fields")
+        
+    except Exception as e:
+        print(f"⚠️  Data migration failed: {e}")
+        # Continue without migration
 
 # PRD CRUD Operations
 @app.post("/prd", response_model=PRDResponse, status_code=status.HTTP_201_CREATED)
@@ -228,6 +322,9 @@ async def get_all_prds():
     """Get all PRDs"""
     try:
         prds = list(prd_collection.find({}, {"_id": 0}))
+        # Ensure all PRDs have required timestamp fields
+        for prd in prds:
+            ensure_timestamps(prd)
         logger.info(f"Retrieved {len(prds)} PRDs")
         return prds
     except Exception as e:
@@ -241,6 +338,9 @@ async def get_prd(prd_id: str):
         prd = prd_collection.find_one({"ID": prd_id}, {"_id": 0})
         if not prd:
             raise HTTPException(status_code=404, detail="PRD not found")
+        
+        # Ensure PRD has required timestamp fields
+        ensure_timestamps(prd)
         
         logger.info(f"Retrieved PRD: {prd_id}")
         return prd
@@ -383,6 +483,9 @@ async def get_all_feature_data():
     """Get all feature data"""
     try:
         feature_data = list(feature_data_collection.find({}, {"_id": 0}))
+        # Ensure all feature data have required timestamp fields
+        for feature in feature_data:
+            ensure_timestamps(feature)
         logger.info(f"Retrieved {len(feature_data)} feature data records")
         return feature_data
     except Exception as e:
@@ -396,6 +499,9 @@ async def get_feature_data(uuid: str):
         feature_data = feature_data_collection.find_one({"uuid": uuid}, {"_id": 0})
         if not feature_data:
             raise HTTPException(status_code=404, detail="Feature data not found")
+        
+        # Ensure feature data has required timestamp fields
+        ensure_timestamps(feature_data)
         
         logger.info(f"Retrieved feature data: {uuid}")
         return feature_data
@@ -415,12 +521,15 @@ async def get_feature_data_by_prd(prd_uuid: str):
             raise HTTPException(status_code=404, detail="PRD not found")
         
         feature_data = list(feature_data_collection.find({"prd_uuid": prd_uuid}, {"_id": 0}))
+        # Ensure all feature data have required timestamp fields
+        for feature in feature_data:
+            ensure_timestamps(feature)
         logger.info(f"Retrieved {len(feature_data)} feature data records for PRD {prd_uuid}")
         return feature_data
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error retrieving feature data for PRD {prd_uuid}: {e}")
+        logger.error(f"Error retrieving feature data for PRD {prd_uuid}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve feature data: {str(e)}")
 
 @app.put("/feature-data/{uuid}", response_model=FeatureDataResponse)
@@ -546,6 +655,9 @@ async def get_all_logs():
     """Get all logs"""
     try:
         logs = list(logs_collection.find({}, {"_id": 0}).sort("timestamp", -1))
+        # Ensure all logs have required timestamp fields
+        for log in logs:
+            ensure_timestamps(log)
         logger.info(f"Retrieved {len(logs)} log entries")
         return logs
     except Exception as e:
@@ -559,6 +671,9 @@ async def get_log(uuid: str):
         log = logs_collection.find_one({"uuid": uuid}, {"_id": 0})
         if not log:
             raise HTTPException(status_code=404, detail="Log not found")
+        
+        # Ensure log has required timestamp fields
+        ensure_timestamps(log)
         
         logger.info(f"Retrieved log: {uuid}")
         return log
@@ -578,6 +693,9 @@ async def get_logs_by_prd(prd_uuid: str):
             raise HTTPException(status_code=404, detail="PRD not found")
         
         logs = list(logs_collection.find({"prd_uuid": prd_uuid}, {"_id": 0}).sort("timestamp", -1))
+        # Ensure all logs have required timestamp fields
+        for log in logs:
+            ensure_timestamps(log)
         logger.info(f"Retrieved {len(logs)} log entries for PRD {prd_uuid}")
         return logs
     except HTTPException:
