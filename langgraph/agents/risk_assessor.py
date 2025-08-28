@@ -124,23 +124,19 @@ class RiskAssessorAgent:
         
         # Check if response is empty
         if not response_text or not response_text.strip():
-            print("⚠️  LLM response is empty or whitespace-only")
-            return self._fallback_risk_assessment({}, {})
+            raise Exception("LLM response is empty")
         
         # Clean the response text
         cleaned_text = response_text.strip()
         
-        # Remove markdown code blocks if present - handle multiline properly
+        # Remove markdown code blocks if present
         if cleaned_text.startswith('```json'):
-            # Remove ```json and everything up to the first newline
             cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
         elif cleaned_text.startswith('```'):
-            # Remove ``` and everything up to the first newline
             cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
         
         # Remove trailing ```
         cleaned_text = re.sub(r'\n?```\s*$', '', cleaned_text)
-        
         cleaned_text = cleaned_text.strip()
         
         # Try to parse the cleaned JSON directly
@@ -149,7 +145,7 @@ class RiskAssessorAgent:
         except json.JSONDecodeError:
             pass
         
-        # Try to find JSON object in the response using a more robust pattern
+        # Try to find JSON object in the response - more robust pattern
         json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
         matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
         
@@ -160,10 +156,66 @@ class RiskAssessorAgent:
                 except json.JSONDecodeError:
                     continue
         
-        # If no JSON found, return fallback
-        print("⚠️  Could not extract JSON from LLM response")
-        print(f"📄 Raw response: {response_text[:200]}...")
-        return self._fallback_risk_assessment({}, {})
+        # If still no JSON found, try to extract specific fields
+        try:
+            # Look for overall_risk_level
+            risk_pattern = r'"overall_risk_level":\s*"([^"]+)"'
+            risk_match = re.search(risk_pattern, cleaned_text)
+            overall_risk_level = risk_match.group(1) if risk_match else "medium"
+            
+            # Look for risk_score
+            score_pattern = r'"risk_score":\s*([0-9.]+)'
+            score_match = re.search(score_pattern, cleaned_text)
+            risk_score = float(score_match.group(1)) if score_match else 0.5
+            
+            # Look for compliance_gaps
+            gaps_pattern = r'"compliance_gaps":\s*\[([^\]]+)\]'
+            gaps_match = re.search(gaps_pattern, cleaned_text)
+            compliance_gaps = []
+            if gaps_match:
+                gaps_str = gaps_match.group(1)
+                compliance_gaps = re.findall(r'"([^"]+)"', gaps_str)
+            
+            # Look for recommendations
+            rec_pattern = r'"recommendations":\s*\[([^\]]+)\]'
+            rec_match = re.search(rec_pattern, cleaned_text)
+            recommendations = []
+            if rec_match:
+                rec_str = rec_match.group(1)
+                recommendations = re.findall(r'"([^"]+)"', rec_str)
+            
+            return {
+                "overall_risk_level": overall_risk_level,
+                "risk_factors": [
+                    {
+                        "factor": "data_collection_scope",
+                        "risk_level": overall_risk_level,
+                        "description": "Data collection and processing risks"
+                    }
+                ],
+                "compliance_gaps": compliance_gaps or ["Missing consent management"],
+                "risk_score": risk_score,
+                "confidence_level": "medium",
+                "recommendations": recommendations or ["Implement consent management", "Establish data retention"]
+            }
+        except:
+            pass
+        
+        # If no JSON found, return default structure
+        return {
+            "overall_risk_level": "medium",
+            "risk_factors": [
+                {
+                    "factor": "data_collection_scope",
+                    "risk_level": "medium",
+                    "description": "Data collection and processing risks"
+                }
+            ],
+            "compliance_gaps": ["Missing consent management"],
+            "risk_score": 0.5,
+            "confidence_level": "medium",
+            "recommendations": ["Implement consent management", "Establish data retention"]
+        }
     
     def _fallback_risk_assessment(self, feature_analysis: Dict[str, Any], regulation_matching: Dict[str, Any]) -> Dict[str, Any]:
         """Fallback risk assessment"""

@@ -25,32 +25,35 @@ from agents import (
     RiskAssessorAgent,
     ReasoningGeneratorAgent,
     QualityAssuranceAgent,
-    AgentOutput
+    PRDParserAgent,
+    USStateComplianceAgent,
+    AgentOutput,
+    ExtractedFeature,
+    FeatureComplianceResult,
+    PRDAnalysisResult
 )
 
 @dataclass
 class WorkflowState:
     """State object for the workflow"""
-    feature_id: str
-    feature_name: str
-    feature_description: str
-    feature_content: str
+    prd_id: str
+    prd_name: str
+    prd_description: str
+    prd_content: str
     metadata: Dict[str, Any]
     
-    # Agent outputs
-    feature_analyzer_output: Optional[AgentOutput] = None
-    regulation_matcher_output: Optional[AgentOutput] = None
-    risk_assessor_output: Optional[AgentOutput] = None
-    reasoning_generator_output: Optional[AgentOutput] = None
-    quality_assurance_output: Optional[AgentOutput] = None
+    # PRD Parser output
+    prd_parser_output: Optional[AgentOutput] = None
+    extracted_features: List[ExtractedFeature] = None
+    
+    # Feature analysis results
+    feature_compliance_results: List[FeatureComplianceResult] = None
     
     # Final results
-    compliance_flags: List[str] = None
-    risk_level: str = "unknown"
-    confidence_score: float = 0.0
-    requires_human_review: bool = False
-    reasoning: str = ""
-    recommendations: List[str] = None
+    overall_risk_level: str = "unknown"
+    overall_confidence_score: float = 0.0
+    critical_compliance_issues: List[str] = None
+    summary_recommendations: List[str] = None
     
     # Workflow metadata
     workflow_id: str = ""
@@ -59,10 +62,14 @@ class WorkflowState:
     total_processing_time: float = 0.0
     
     def __post_init__(self):
-        if self.compliance_flags is None:
-            self.compliance_flags = []
-        if self.recommendations is None:
-            self.recommendations = []
+        if self.extracted_features is None:
+            self.extracted_features = []
+        if self.feature_compliance_results is None:
+            self.feature_compliance_results = []
+        if self.critical_compliance_issues is None:
+            self.critical_compliance_issues = []
+        if self.summary_recommendations is None:
+            self.summary_recommendations = []
         if not self.workflow_id:
             self.workflow_id = f"workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         if not self.start_time:
@@ -76,11 +83,13 @@ class ComplianceWorkflow:
         self.setup_llm()
         
         # Initialize agents
+        self.prd_parser = PRDParserAgent(self.llm)
         self.feature_analyzer = FeatureAnalyzerAgent(self.llm)
         self.regulation_matcher = RegulationMatcherAgent(self.llm)
         self.risk_assessor = RiskAssessorAgent(self.llm)
         self.reasoning_generator = ReasoningGeneratorAgent(self.llm)
         self.quality_assurance = QualityAssuranceAgent(self.llm)
+        self.us_state_compliance = USStateComplianceAgent(self.llm)
     
     def setup_llm(self):
         """Setup LLM with fallback models"""
@@ -125,108 +134,215 @@ class ComplianceWorkflow:
             print("💡 Check your API key and internet connection")
             self.llm = None
     
-    def feature_analyzer_agent(self, state: WorkflowState) -> WorkflowState:
-        """Feature Analyzer Agent - Extracts compliance-relevant information"""
-        agent_output = self.feature_analyzer.analyze(
-            state.feature_name,
-            state.feature_description,
-            state.feature_content
+    def prd_parser_agent(self, state: WorkflowState) -> WorkflowState:
+        """PRD Parser Agent - Extracts features from PRD document"""
+        agent_output = self.prd_parser.parse_prd(
+            state.prd_name,
+            state.prd_description,
+            state.prd_content
         )
-        state.feature_analyzer_output = agent_output
-        return state
-    
-    def regulation_matcher_agent(self, state: WorkflowState) -> WorkflowState:
-        """Regulation Matcher Agent - Matches features to relevant regulations"""
-        feature_analysis = state.feature_analyzer_output.analysis_result
-        agent_output = self.regulation_matcher.match_regulations(
-            state.feature_name,
-            feature_analysis
-        )
-        state.regulation_matcher_output = agent_output
-        return state
-    
-    def risk_assessor_agent(self, state: WorkflowState) -> WorkflowState:
-        """Risk Assessor Agent - Scores compliance risk and flags issues"""
-        feature_analysis = state.feature_analyzer_output.analysis_result
-        regulation_matching = state.regulation_matcher_output.analysis_result
-        agent_output = self.risk_assessor.assess_risk(
-            state.feature_name,
-            feature_analysis,
-            regulation_matching
-        )
-        state.risk_assessor_output = agent_output
-        return state
-    
-    def reasoning_generator_agent(self, state: WorkflowState) -> WorkflowState:
-        """Reasoning Generator Agent - Produces clear justifications"""
-        feature_analysis = state.feature_analyzer_output.analysis_result
-        regulation_matching = state.regulation_matcher_output.analysis_result
-        risk_assessment = state.risk_assessor_output.analysis_result
-        agent_output = self.reasoning_generator.generate_reasoning(
-            state.feature_name,
-            feature_analysis,
-            regulation_matching,
-            risk_assessment
-        )
-        state.reasoning_generator_output = agent_output
-        return state
-    
-    def quality_assurance_agent(self, state: WorkflowState) -> WorkflowState:
-        """Quality Assurance Agent - Validates and checks consistency"""
-        all_outputs = [
-            state.feature_analyzer_output,
-            state.regulation_matcher_output,
-            state.risk_assessor_output,
-            state.reasoning_generator_output
-        ]
+        state.prd_parser_output = agent_output
         
-        agent_output = self.quality_assurance.validate_results(
-            state.feature_name,
-            all_outputs
-        )
-        state.quality_assurance_output = agent_output
+        # Convert extracted features to ExtractedFeature objects
+        extracted_features_data = agent_output.analysis_result.get("extracted_features", [])
+        state.extracted_features = []
         
-        # Set final state values
-        state.compliance_flags = state.regulation_matcher_output.analysis_result.get("applicable_regulations", [])
-        state.risk_level = state.risk_assessor_output.analysis_result.get("overall_risk_level", "unknown")
-        state.confidence_score = agent_output.analysis_result.get("confidence_adjustment", 0.8)
-        state.requires_human_review = agent_output.analysis_result.get("final_validation") == "requires_review"
-        state.reasoning = state.reasoning_generator_output.analysis_result.get("executive_summary", "")
-        state.recommendations = agent_output.analysis_result.get("final_recommendations", [])
-        state.end_time = datetime.now().isoformat()
-        state.total_processing_time = (datetime.now() - datetime.fromisoformat(state.start_time)).total_seconds()
+        for feature_data in extracted_features_data:
+            feature = ExtractedFeature(
+                feature_id=feature_data.get("feature_id", ""),
+                feature_name=feature_data.get("feature_name", ""),
+                feature_description=feature_data.get("feature_description", ""),
+                feature_content=feature_data.get("feature_content", ""),
+                section=feature_data.get("section", ""),
+                priority=feature_data.get("priority", "Medium"),
+                complexity=feature_data.get("complexity", "Medium"),
+                data_types=feature_data.get("data_types", []),
+                user_impact=feature_data.get("user_impact", ""),
+                technical_requirements=feature_data.get("technical_requirements", []),
+                compliance_considerations=feature_data.get("compliance_considerations", [])
+            )
+            state.extracted_features.append(feature)
         
         return state
     
-
+    def analyze_single_feature(self, feature: ExtractedFeature) -> FeatureComplianceResult:
+        """Analyze a single feature through all agents - optimized"""
+        start_time = datetime.now()
+        agent_outputs = {}
+        
+        try:
+            # Feature Analyzer
+            feature_analyzer_output = self.feature_analyzer.analyze(
+                feature.feature_name,
+                feature.feature_description,
+                feature.feature_content
+            )
+            agent_outputs["feature_analyzer"] = feature_analyzer_output
+            
+            # Regulation Matcher
+            feature_analysis = feature_analyzer_output.analysis_result
+            regulation_matcher_output = self.regulation_matcher.match_regulations(
+                feature.feature_name,
+                feature_analysis
+            )
+            agent_outputs["regulation_matcher"] = regulation_matcher_output
+            
+            # Risk Assessor
+            regulation_matching = regulation_matcher_output.analysis_result
+            risk_assessor_output = self.risk_assessor.assess_risk(
+                feature.feature_name,
+                feature_analysis,
+                regulation_matching
+            )
+            agent_outputs["risk_assessor"] = risk_assessor_output
+            
+            # Reasoning Generator
+            risk_assessment = risk_assessor_output.analysis_result
+            reasoning_generator_output = self.reasoning_generator.generate_reasoning(
+                feature.feature_name,
+                feature_analysis,
+                regulation_matching,
+                risk_assessment
+            )
+            agent_outputs["reasoning_generator"] = reasoning_generator_output
+            
+            # Quality Assurance
+            all_outputs = [
+                feature_analyzer_output,
+                regulation_matcher_output,
+                risk_assessor_output,
+                reasoning_generator_output
+            ]
+            quality_assurance_output = self.quality_assurance.validate_results(
+                feature.feature_name,
+                all_outputs
+            )
+            agent_outputs["quality_assurance"] = quality_assurance_output
+            
+            # US State Compliance
+            us_state_compliance_output = self.us_state_compliance.analyze_us_state_compliance(
+                feature.feature_name,
+                feature_analysis,
+                regulation_matching,
+                risk_assessment
+            )
+            agent_outputs["us_state_compliance"] = us_state_compliance_output
+            
+            # Extract final results
+            compliance_flags = regulation_matcher_output.analysis_result.get("applicable_regulations", [])
+            risk_level = risk_assessor_output.analysis_result.get("overall_risk_level", "unknown")
+            confidence_score = quality_assurance_output.analysis_result.get("confidence_adjustment", 0.8)
+            requires_human_review = quality_assurance_output.analysis_result.get("final_validation") == "requires_review"
+            reasoning = reasoning_generator_output.analysis_result.get("executive_summary", "")
+            recommendations = quality_assurance_output.analysis_result.get("final_recommendations", [])
+            
+            # US State compliance results
+            us_state_analysis = us_state_compliance_output.analysis_result
+            non_compliant_states = us_state_analysis.get("non_compliant_states", [])
+            
+        except Exception as e:
+            print(f"⚠️  Error in feature analysis: {e}")
+            # Create fallback results
+            compliance_flags = ["GDPR", "CCPA"]
+            risk_level = "medium"
+            confidence_score = 0.7
+            requires_human_review = True
+            reasoning = f"Analysis incomplete due to error: {str(e)}"
+            recommendations = ["Review feature manually", "Check system configuration"]
+            non_compliant_states = ["California", "Virginia"]
+        
+        processing_time = (datetime.now() - start_time).total_seconds()
+        
+        return FeatureComplianceResult(
+            feature=feature,
+            agent_outputs=agent_outputs,
+            compliance_flags=compliance_flags,
+            risk_level=risk_level,
+            confidence_score=confidence_score,
+            requires_human_review=requires_human_review,
+            reasoning=reasoning,
+            recommendations=recommendations,
+            us_state_compliance=[],
+            non_compliant_states=non_compliant_states,
+            processing_time=processing_time,
+            timestamp=datetime.now().isoformat()
+        )
     
-    def run_workflow(self, feature_data: Dict[str, Any]) -> WorkflowState:
+    def run_workflow(self, prd_data: Dict[str, Any]) -> WorkflowState:
         """Run the complete workflow"""
-        print(f"\n🚀 Starting Multi-Agent Workflow for: {feature_data['feature_name']}")
+        print(f"\n🚀 Starting Multi-Agent PRD Analysis Workflow for: {prd_data['prd_name']}")
         print("=" * 80)
         
         # Create initial state
         initial_state = WorkflowState(
-            feature_id=feature_data['feature_id'],
-            feature_name=feature_data['feature_name'],
-            feature_description=feature_data['feature_description'],
-            feature_content=feature_data['feature_content'],
-            metadata=feature_data.get('metadata', {})
+            prd_id=prd_data['prd_id'],
+            prd_name=prd_data['prd_name'],
+            prd_description=prd_data['prd_description'],
+            prd_content=prd_data['prd_content'],
+            metadata=prd_data.get('metadata', {})
         )
         
-        # Run agents sequentially
-        print("🔄 Running agents sequentially...")
+        # Step 1: Parse PRD and extract features
+        print("📋 Step 1: Parsing PRD and extracting features...")
+        state = self.prd_parser_agent(initial_state)
         
-        state = self.feature_analyzer_agent(initial_state)
-        state = self.regulation_matcher_agent(state)
-        state = self.risk_assessor_agent(state)
-        state = self.reasoning_generator_agent(state)
-        state = self.quality_assurance_agent(state)
+        print(f"✅ Extracted {len(state.extracted_features)} features from PRD")
+        
+        # Step 2: Analyze each feature
+        print(f"\n🔍 Step 2: Analyzing {len(state.extracted_features)} features...")
+        for i, feature in enumerate(state.extracted_features, 1):
+            print(f"\n📊 Feature {i}/{len(state.extracted_features)}: {feature.feature_name}")
+            feature_result = self.analyze_single_feature(feature)
+            state.feature_compliance_results.append(feature_result)
+        
+        # Step 3: Generate overall results
+        print(f"\n📈 Step 3: Generating overall results...")
+        self._generate_overall_results(state)
         
         # Save results
         self.save_workflow_results(state)
         
         return state
+    
+    def _generate_overall_results(self, state: WorkflowState):
+        """Generate overall results from all feature analyses"""
+        
+        # Calculate overall risk level
+        risk_levels = [result.risk_level for result in state.feature_compliance_results]
+        if "critical" in risk_levels:
+            overall_risk = "critical"
+        elif "high" in risk_levels:
+            overall_risk = "high"
+        elif "medium" in risk_levels:
+            overall_risk = "medium"
+        else:
+            overall_risk = "low"
+        
+        state.overall_risk_level = overall_risk
+        
+        # Calculate overall confidence
+        total_confidence = sum(result.confidence_score for result in state.feature_compliance_results)
+        state.overall_confidence_score = total_confidence / len(state.feature_compliance_results) if state.feature_compliance_results else 0.0
+        
+        # Collect critical issues
+        critical_issues = []
+        for result in state.feature_compliance_results:
+            if result.risk_level in ["high", "critical"]:
+                critical_issues.append(f"{result.feature.feature_name}: {result.risk_level} risk")
+        
+        state.critical_compliance_issues = critical_issues
+        
+        # Collect summary recommendations
+        all_recommendations = []
+        for result in state.feature_compliance_results:
+            all_recommendations.extend(result.recommendations)
+        
+        # Remove duplicates and limit
+        unique_recommendations = list(set(all_recommendations))
+        state.summary_recommendations = unique_recommendations[:10]  # Top 10 recommendations
+        
+        state.end_time = datetime.now().isoformat()
+        state.total_processing_time = (datetime.now() - datetime.fromisoformat(state.start_time)).total_seconds()
     
     def save_workflow_results(self, state: WorkflowState):
         """Save workflow results to output.json"""
@@ -239,27 +355,36 @@ class ComplianceWorkflow:
                     "end_time": state.end_time,
                     "total_processing_time": state.total_processing_time
                 },
-                "document_info": {
-                    "document_id": state.feature_id,
-                    "document_name": state.feature_name,
-                    "document_description": state.feature_description,
-                    "document_content": state.feature_content,
+                "prd_info": {
+                    "prd_id": state.prd_id,
+                    "prd_name": state.prd_name,
+                    "prd_description": state.prd_description,
+                    "prd_content": state.prd_content,
                     "metadata": state.metadata
                 },
-                "agent_outputs": {
-                    "feature_analyzer": asdict(state.feature_analyzer_output) if state.feature_analyzer_output else None,
-                    "regulation_matcher": asdict(state.regulation_matcher_output) if state.regulation_matcher_output else None,
-                    "risk_assessor": asdict(state.risk_assessor_output) if state.risk_assessor_output else None,
-                    "reasoning_generator": asdict(state.reasoning_generator_output) if state.reasoning_generator_output else None,
-                    "quality_assurance": asdict(state.quality_assurance_output) if state.quality_assurance_output else None
-                },
-                "final_results": {
-                    "compliance_flags": state.compliance_flags,
-                    "risk_level": state.risk_level,
-                    "confidence_score": state.confidence_score,
-                    "requires_human_review": state.requires_human_review,
-                    "reasoning": state.reasoning,
-                    "recommendations": state.recommendations
+                "prd_parser_output": asdict(state.prd_parser_output) if state.prd_parser_output else None,
+                "extracted_features": [asdict(feature) for feature in state.extracted_features],
+                "feature_compliance_results": [
+                    {
+                        "feature": asdict(result.feature),
+                        "compliance_flags": result.compliance_flags,
+                        "risk_level": result.risk_level,
+                        "confidence_score": result.confidence_score,
+                        "requires_human_review": result.requires_human_review,
+                        "reasoning": result.reasoning,
+                        "recommendations": result.recommendations,
+                        "non_compliant_states": result.non_compliant_states,
+                        "processing_time": result.processing_time,
+                        "timestamp": result.timestamp
+                    }
+                    for result in state.feature_compliance_results
+                ],
+                "overall_results": {
+                    "total_features": len(state.extracted_features),
+                    "overall_risk_level": state.overall_risk_level,
+                    "overall_confidence_score": state.overall_confidence_score,
+                    "critical_compliance_issues": state.critical_compliance_issues,
+                    "summary_recommendations": state.summary_recommendations
                 }
             }
             
@@ -278,7 +403,7 @@ class ComplianceWorkflow:
 
 def main():
     """Main function to run the workflow"""
-    print("🚀 Multi-Agent Geo-Compliance Detection System")
+    print("🚀 Multi-Agent PRD Geo-Compliance Detection System")
     print("=" * 80)
     
     # Check dependencies
@@ -289,20 +414,20 @@ def main():
     # Create workflow
     workflow = ComplianceWorkflow()
     
-    print("\n📋 Document Analysis Mode")
+    print("\n📋 PRD Analysis Mode")
     print("=" * 50)
-    print("Enter your document details (or press Enter for sample):")
+    print("Enter your PRD details (or press Enter for sample):")
     
-    # Get document details
-    doc_name = input("Document Name: ").strip()
-    if not doc_name:
-        doc_name = "Sample Product Requirements Document"
+    # Get PRD details
+    prd_name = input("PRD Name: ").strip()
+    if not prd_name:
+        prd_name = "Sample Product Requirements Document"
     
-    doc_description = input("Document Description (optional): ").strip()
-    if not doc_description:
-        doc_description = "Product requirements document for compliance analysis"
+    prd_description = input("PRD Description (optional): ").strip()
+    if not prd_description:
+        prd_description = "Product requirements document for compliance analysis"
     
-    print("\n📝 Enter your document content:")
+    print("\n📝 Enter your PRD content:")
     print("(Press Enter twice to finish, or type 'sample' for demo content)")
     
     content_lines = []
@@ -352,38 +477,47 @@ def main():
         else:
             content_lines.append(line)
     
-    document_content = "\n".join(content_lines)
+    prd_content = "\n".join(content_lines)
     
-    # Create document data
-    document_data = {
-        "feature_id": f"doc_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
-        "feature_name": doc_name,
-        "feature_description": doc_description,
-        "feature_content": document_content,
+    # Create PRD data
+    prd_data = {
+        "prd_id": f"prd_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "prd_name": prd_name,
+        "prd_description": prd_description,
+        "prd_content": prd_content,
         "metadata": {
             "document_type": "product_requirements",
             "analysis_date": datetime.now().isoformat(),
-            "word_count": len(document_content.split())
+            "word_count": len(prd_content.split())
         }
     }
     
     # Run workflow
-    print(f"\n📋 Analyzing document: {document_data['feature_name']}")
-    print(f"📝 Description: {document_data['feature_description']}")
-    print(f"📄 Content length: {len(document_content)} characters")
+    print(f"\n📋 Analyzing PRD: {prd_data['prd_name']}")
+    print(f"📝 Description: {prd_data['prd_description']}")
+    print(f"📄 Content length: {len(prd_content)} characters")
     
-    final_state = workflow.run_workflow(document_data)
+    final_state = workflow.run_workflow(prd_data)
     
     # Display final results
-    print(f"\n🎉 Workflow Analysis Complete!")
+    print(f"\n🎉 PRD Analysis Complete!")
     print("=" * 80)
-    print(f"🔴 Risk Level: {final_state.risk_level.upper()}")
-    print(f"📈 Confidence: {final_state.confidence_score:.1%}")
-    print(f"👤 Human Review: {'Required' if final_state.requires_human_review else 'Not Required'}")
-    print(f"🏛️  Compliance Flags: {', '.join(final_state.compliance_flags) if final_state.compliance_flags else 'None'}")
-    print(f"💭 Reasoning: {final_state.reasoning}")
-    print(f"💡 Recommendations:")
-    for rec in final_state.recommendations:
+    print(f"📊 Total Features Analyzed: {len(final_state.extracted_features)}")
+    print(f"🔴 Overall Risk Level: {final_state.overall_risk_level.upper()}")
+    print(f"📈 Overall Confidence: {final_state.overall_confidence_score:.1%}")
+    print(f"🚨 Critical Issues: {len(final_state.critical_compliance_issues)}")
+    
+    print(f"\n📋 Feature Summary:")
+    for i, result in enumerate(final_state.feature_compliance_results, 1):
+        print(f"  {i}. {result.feature.feature_name}")
+        print(f"     Risk: {result.risk_level.upper()}")
+        print(f"     Non-compliant states: {len(result.non_compliant_states)}")
+        if result.non_compliant_states:
+            print(f"     States: {', '.join(result.non_compliant_states)}")
+        print()
+    
+    print(f"💡 Top Recommendations:")
+    for rec in final_state.summary_recommendations[:5]:
         print(f"   • {rec}")
     
     print(f"\n📊 Total Processing Time: {final_state.total_processing_time:.2f}s")

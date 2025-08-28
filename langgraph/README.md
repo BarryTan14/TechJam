@@ -1,329 +1,196 @@
-# LangGraph Multi-Agent Geo-Compliance Detection System
+# LangGraph Multi-Agent PRD Geo-Compliance Detection System
 
-A comprehensive automated geo-compliance detection and governance system using multi-agent workflows to analyze feature artifacts and detect geo-specific legal compliance needs.
+A comprehensive automated geo-compliance detection system that analyzes Product Requirements Documents (PRDs) to extract features and detect geo-specific legal compliance needs using multi-agent workflows powered by Google Gemini AI.
 
 ## 🚀 Quick Start
 
-### 1. Set Up Environment Configuration
+### 1. Install Dependencies
 ```bash
-# Option A: Use the setup script (Recommended)
-python setup_env.py
-
-# Option B: Create .env file manually
-# Copy env_template.txt to .env and edit with your API key
-cp env_template.txt .env
-# Then edit .env file with your actual Gemini API key
+pip install -r requirements.txt
 ```
 
-### 2. Install Dependencies
-
-#### Option A: Basic Setup (Recommended)
-```bash
-python setup.py
-# Choose option 1 for basic setup
+### 2. Set Up API Key (Required)
+Create a `.env` file in the langgraph directory with your Gemini API key:
+```
+GEMINI_API_KEY=your_api_key_here
 ```
 
-#### Option B: Manual Installation
-```bash
-pip install google-generativeai
-```
-
-#### Option C: Full Setup (Advanced)
-```bash
-python setup.py
-# Choose option 2 for full LangGraph functionality
-```
+**Note**: This system requires a Gemini API key to function. Get your API key from: https://makersuite.google.com/app/apikey
 
 ### 3. Run the System
-
-#### Option A: Main Workflow (Recommended)
 ```bash
 python langgraph_workflow.py
 ```
 
-#### Option B: Test with API Key
-```bash
-python test_workflow.py
+That's it! The system will prompt you for PRD details and analyze it for compliance.
+
+## 📋 What It Does
+
+The system uses 7 specialized AI agents to analyze your PRDs:
+
+1. **📋 PRD Parser** - Extracts individual features from PRD documents using AI
+2. **🔍 Feature Analyzer** - Extracts compliance-relevant information from each feature using AI
+3. **🏛️ Regulation Matcher** - Matches features to applicable regulations (GDPR, CCPA, PIPL, LGPD) using AI
+4. **⚠️ Risk Assessor** - Scores compliance risks and identifies gaps using AI
+5. **💭 Reasoning Generator** - Produces clear justifications and recommendations using AI
+6. **🔍 Quality Assurance** - Validates results and provides final assessment using AI
+7. **🇺🇸 US State Compliance** - Analyzes compliance for each US state (50 states) using AI
+
+## 📊 Output
+
+- **Console Output**: Real-time analysis progress and final results
+- **JSON File**: Complete audit trail saved to `output/output_workflow_*.json`
+- **US State Analysis**: List of non-compliant states for each feature
+
+## 🎯 Example Output
+
 ```
-
-#### Option C: Main Application
-```bash
-python main.py
-```
-
-## 📋 System Overview
-
-### Multi-Agent Architecture
-
-The system implements 5 specialized agents working together:
-
-1. **🔍 Feature Analyzer Agent**
-   - Extracts compliance-relevant information from feature documents
-   - Identifies data types, processing purposes, and data flows
-   - Analyzes user interactions and technical implementation
-
-2. **🏛️ Regulation Matcher Agent**
-   - Matches features to geographic regulations using RAG-based retrieval
-   - Supports GDPR, CCPA, PIPL, LGPD, and other global regulations
-   - Provides compliance priority and geographic scope analysis
-
-3. **⚠️ Risk Assessor Agent**
-   - Scores compliance risk and flags issues
-   - Identifies compliance gaps and mitigation strategies
-   - Determines if human review is required
-
-4. **💭 Reasoning Generator Agent**
-   - Produces clear justifications for compliance decisions
-   - Generates audit-ready evidence trails
-   - Creates executive summaries and detailed reasoning
-
-5. **🔍 Quality Assurance Agent**
-   - Validates and checks consistency of outputs
-   - Ensures quality and reliability of analysis
-   - Provides final validation and confidence scoring
-
-### Key Features
-
-- ✅ **Multi-Agent Workflow**: 5 specialized agents working sequentially
-- ✅ **Detailed Logging**: Shows thought process of each agent
-- ✅ **JSON Output**: Complete audit trail saved to file
-- ✅ **LLM Integration**: Uses Gemini AI for intelligent analysis
-- ✅ **Fallback Mode**: Works without LLM using pattern matching
-- ✅ **Processing Time Tracking**: Performance metrics for each agent
-- ✅ **Confidence Scoring**: Uncertainty quantification
-- ✅ **Human-in-the-Loop**: Flags cases requiring human review
-
-## 📊 Output Structure
-
-### Console Output
-```
-🚀 Starting Multi-Agent Workflow for: Sample Product Requirements Document
+🚀 Starting Multi-Agent PRD Analysis Workflow for: Sample PRD
 ================================================================================
-🔄 Running agents sequentially...
+📋 Step 1: Parsing PRD and extracting features...
+✅ Extracted 11 features from PRD
 
-🔍 [Feature Analyzer] Processing document: Sample Product Requirements Document
-✅ [Feature Analyzer] Completed in 0.15s
-   📊 Data types: ['personal_data', 'location_data']
-   🎯 Processing purposes: ['analytics', 'personalization']
+🔍 Step 2: Analyzing 11 features...
 
-🏛️  [Regulation Matcher] Matching regulations for: Sample Product Requirements Document
-✅ [Regulation Matcher] Completed in 0.12s
-   📋 Applicable regulations: ['GDPR', 'CCPA', 'PIPL', 'LGPD']
-   🎯 Compliance priority: high
+📊 Feature 1/11: User Preference Collection
+🔍 [Feature Analyzer] Processing feature...
+✅ [Feature Analyzer] Completed in 2.1s
+🏛️  [Regulation Matcher] Matching regulations...
+✅ [Regulation Matcher] Completed in 1.8s
+⚠️  [Risk Assessor] Assessing risks...
+✅ [Risk Assessor] Completed in 2.3s
+💭 [Reasoning Generator] Generating reasoning...
+✅ [Reasoning Generator] Completed in 1.9s
+🔍 [Quality Assurance] Validating results...
+✅ [Quality Assurance] Completed in 1.2s
+🇺🇸 [US State Compliance] Analyzing US state compliance...
+✅ [US State Compliance] Analyzed 50 states, found 0 non-compliant in 1.5s
 
-⚠️  [Risk Assessor] Assessing risks for: Sample Product Requirements Document
-✅ [Risk Assessor] Completed in 0.18s
-   🚨 Risk level: high
-   📊 Confidence: 85.0%
-
-💭 [Reasoning Generator] Generating reasoning for: Sample Product Requirements Document
-✅ [Reasoning Generator] Completed in 0.14s
-   📝 Compliance status: requires_review
-   💡 Recommendations: 5
-
-🔍 [Quality Assurance] Validating results for: Sample Product Requirements Document
-✅ [Quality Assurance] Completed in 0.10s
-   🎯 Quality score: 82.5%
-   ✅ Final validation: approved
-
-🎉 Workflow Analysis Complete!
+🎉 PRD Analysis Complete!
 ================================================================================
-🔴 Risk Level: HIGH
-📈 Confidence: 82.5%
-👤 Human Review: Not Required
-🏛️  Compliance Flags: GDPR, CCPA, PIPL, LGPD
-💭 Reasoning: Document requires high level compliance attention...
-💡 Recommendations:
-   • Implement explicit consent mechanisms
+📊 Total Features Analyzed: 11
+🔴 Overall Risk Level: HIGH
+📈 Overall Confidence: 87.3%
+🚨 Critical Issues: 11
+
+📋 Feature Summary:
+  1. User Preference Collection
+     Risk: HIGH
+     Non-compliant states: 0
+
+  2. Browsing History Tracking
+     Risk: HIGH
+     Non-compliant states: 10
+     States: CA, CO, CT, FL, IL, NY, TX, UT, VA, WA
+
+  3. Location Data Collection
+     Risk: HIGH
+     Non-compliant states: 0
+
+💡 Top Recommendations:
+   • Implement state-specific consent mechanisms
    • Add data minimization controls
    • Establish user rights portal
-   • Monitor for compliance updates
-   • Regular review recommended
+   • Monitor for regulation updates
 
-📊 Total Processing Time: 0.69s
-📁 Results saved to: output/output_workflow_20250827_234144.json
-```
-
-### JSON Output File
-The system generates a comprehensive JSON file (`output/output_workflow_*.json`) containing:
-
-  ```json
-  {
-  "workflow_metadata": {
-    "workflow_id": "workflow_20250827_234144",
-    "start_time": "2025-08-27T23:41:44.703031",
-    "end_time": "2025-08-27T23:41:45.392037",
-    "total_processing_time": 0.689006
-  },
-  "document_info": {
-    "document_id": "test_001",
-    "document_name": "Biometric Authentication System PRD",
-    "document_description": "Product requirements document for facial recognition...",
-    "document_content": "...",
-    "metadata": {...}
-  },
-  "agent_outputs": {
-    "feature_analyzer": {
-      "agent_name": "Feature Analyzer",
-      "input_data": {...},
-      "thought_process": "Used LLM to analyze feature structure...",
-      "analysis_result": {...},
-      "confidence_score": 0.85,
-      "processing_time": 0.15,
-      "timestamp": "2025-08-27T23:41:44.703031"
-    },
-    "regulation_matcher": {...},
-    "risk_assessor": {...},
-    "reasoning_generator": {...},
-    "quality_assurance": {...}
-  },
-  "final_results": {
-    "compliance_flags": ["GDPR", "CCPA", "PIPL", "LGPD"],
-    "risk_level": "high",
-    "confidence_score": 0.825,
-    "requires_human_review": false,
-    "reasoning": "Feature requires high level compliance attention...",
-    "recommendations": [...]
-  }
-}
+📊 Total Processing Time: 566.78s
+📁 Results saved to: output/output_workflow_20250828_172651.json
 ```
 
 ## 🔧 Configuration
 
 ### Environment Variables
-- `GEMINI_API_KEY`: Your Google Gemini API key (optional - system works without it)
+- `GEMINI_API_KEY`: Your Google Gemini API key (required)
 
 ### Dependencies
-
-#### Basic Dependencies (Required)
-The system works with minimal dependencies:
 - `google-generativeai`: For Gemini AI integration
-- `fastapi`, `uvicorn`, `pydantic`: For API functionality (optional)
 - `python-dotenv`: For environment variable management
-
-#### Full Dependencies (Optional)
-For complete LangGraph functionality:
-- `langgraph`, `langchain`, `langchain-google-genai`: For advanced workflow orchestration
-- `chromadb`, `sentence-transformers`: For vector database and embeddings
-
-### Installation Options
-
-#### 1. Basic Setup (Recommended)
-```bash
-python setup.py
-# Choose option 1
-```
-This installs only essential packages and avoids dependency conflicts.
-
-#### 2. Full Setup (Advanced)
-```bash
-python setup.py
-# Choose option 2
-```
-This installs all dependencies including LangGraph (may take longer and require more disk space).
-
-#### 3. Manual Installation
-```bash
-# Basic
-pip install google-generativeai
-
-# Full (if you want all features)
-pip install -r requirements_full.txt
-```
+- `fastapi`, `uvicorn`, `pydantic`: For API functionality
 
 ## 📁 Project Structure
 
 ```
 langgraph/
-├── langgraph_workflow.py       # Main workflow (recommended)
-├── test_workflow.py            # Test script with API key
-├── main.py                     # Main application
-├── run_gemini.py              # Alternative implementation
-├── setup.py                   # Setup script
-├── requirements.txt            # Basic dependencies
-├── requirements_full.txt       # Full dependencies
-├── README.md                   # This file
-├── QUICKSTART.md              # Quick start guide
-├── output/                    # Output folder for JSON files
-│   └── output_*.json          # Generated analysis results
-└── [other supporting files]
+├── langgraph_workflow.py    # Main workflow (run this!)
+├── agents/                  # Agent modules
+│   ├── prd_parser.py        # PRD parsing and feature extraction
+│   ├── feature_analyzer.py  # Feature analysis
+│   ├── regulation_matcher.py # Regulation matching
+│   ├── risk_assessor.py     # Risk assessment
+│   ├── reasoning_generator.py # Reasoning generation
+│   ├── quality_assurance.py # Quality validation
+│   ├── us_state_compliance.py # US state compliance analysis
+│   └── models.py            # Data models
+├── main.py                  # Alternative API interface
+├── requirements.txt         # Dependencies
+├── README.md               # This file
+├── QUICKSTART.md           # Quick start guide
+└── output/                 # Generated analysis results
+    └── output_*.json       # JSON output files
 ```
-
-## 🎯 Use Cases
-
-### 1. Document Compliance Analysis
-Analyze product requirement documents and other text documents for regulatory compliance.
-
-### 2. Audit Trail Generation
-Generate comprehensive audit trails for regulatory inquiries.
-
-### 3. Risk Assessment
-Identify compliance risks and gaps in document requirements and system specifications.
-
-### 4. Training and Education
-Use the detailed reasoning to train teams on compliance requirements.
-
-### 5. Continuous Monitoring
-Monitor documents and requirements for compliance changes as regulations evolve.
-
-## 🔍 Supported Regulations
-
-- **GDPR** (EU): General Data Protection Regulation
-- **CCPA** (California): California Consumer Privacy Act
-- **PIPL** (China): Personal Information Protection Law
-- **LGPD** (Brazil): Lei Geral de Proteção de Dados
-- **Other regulations**: Extensible framework for additional regulations
-
-## 🚨 Risk Levels
-
-- **Low**: Minimal compliance concerns, standard controls sufficient
-- **Medium**: Some compliance considerations, enhanced controls recommended
-- **High**: Significant compliance risks, detailed review required
-- **Critical**: Severe compliance issues, immediate attention needed
-
-## 💡 Best Practices
-
-1. **Start with Basic Setup**: Use the simple workflow first to understand the system
-2. **Set API Key**: For best results, configure your Gemini API key
-3. **Review Outputs**: Always review the generated JSON files for accuracy
-4. **Human Review**: Pay attention to cases flagged for human review
-5. **Regular Updates**: Keep the system updated as regulations change
-6. **Documentation**: Use the audit trails for compliance documentation
 
 ## 🛠️ Troubleshooting
 
 ### Common Issues
 
-1. **Dependency Conflicts**: Use `python setup.py` and choose option 1 for basic setup
-2. **No API Key**: System runs in fallback mode with pattern matching
-3. **Import Errors**: Install dependencies with `pip install google-generativeai`
-4. **JSON Parsing Errors**: Check LLM responses for valid JSON format
-5. **Performance Issues**: Consider using the simple workflow for faster processing
+1. **No API Key**: System will exit with clear error message
+2. **Invalid API Key**: Check your API key at https://makersuite.google.com/app/apikey
+3. **Network Issues**: Ensure stable internet connection for LLM calls
+4. **Import Errors**: Run `pip install -r requirements.txt`
 
 ### Getting Help
 
-- Check the console output for detailed error messages
-- Review the generated JSON files for analysis results
-- Ensure your API key is correctly set in `.env` file if using LLM features
-- Use `python setup_env.py` to configure your environment
-- Use `python setup.py` for guided installation
+- Check console output for detailed error messages
+- Review generated JSON files for analysis results
+- Ensure your API key is correctly set in `.env` file
 
-## 📈 Performance Metrics
+## 🎯 Use Cases
 
-- **Processing Time**: Typically 0.5-2 seconds per feature
-- **Accuracy**: >90% with LLM, ~70% with fallback pattern matching
-- **Scalability**: Supports batch processing of multiple features
-- **Reliability**: Graceful fallbacks ensure system always works
+- **PRD Compliance Analysis**: Analyze product requirements for regulatory compliance
+- **Feature Extraction**: Automatically extract features from PRD documents using AI
+- **US State Compliance**: Get detailed compliance analysis for all 50 US states
+- **Audit Trail Generation**: Generate comprehensive audit trails
+- **Risk Assessment**: Identify compliance risks and gaps
+- **Training**: Use detailed reasoning to train teams on compliance
 
-## 🔮 Future Enhancements
+## 🔮 Supported Regulations
 
-- Integration with more LLM providers
-- Enhanced vector database for regulatory knowledge
-- Real-time compliance monitoring
-- Integration with CI/CD pipelines
-- Advanced fine-tuning capabilities
-- Multi-language support for global regulations
+### Global Regulations
+- **GDPR** (EU): General Data Protection Regulation
+- **CCPA** (California): California Consumer Privacy Act  
+- **PIPL** (China): Personal Information Protection Law
+- **LGPD** (Brazil): Lei Geral de Proteção de Dados
+
+### US State Regulations
+The system analyzes compliance for all 50 US states, including:
+- **California (CCPA/CPRA)**: California Consumer Privacy Act
+- **Virginia (VCDPA)**: Virginia Consumer Data Protection Act
+- **Colorado (CPA)**: Colorado Privacy Act
+- **Connecticut (CTDPA)**: Connecticut Data Privacy Act
+- **Utah (UCPA)**: Utah Consumer Privacy Act
+- **Florida (FDBR)**: Florida Digital Bill of Rights
+- **Texas (TDPSA)**: Texas Data Privacy and Security Act
+- **And 42 more states** with their respective privacy laws
+
+## 📈 Key Features
+
+- **AI-Powered PRD Parsing**: Automatically extracts features from PRD documents using Gemini AI
+- **Multi-Feature Analysis**: Analyzes each feature individually through all AI agents
+- **US State Compliance**: Comprehensive analysis for all 50 US states using AI
+- **Detailed Output**: Complete audit trail with reasoning and recommendations
+- **Risk Assessment**: Identifies high-risk features and compliance gaps
+- **Processing Time Tracking**: Performance metrics for each agent and feature
+- **LLM-Only Operation**: All analysis performed by AI agents for maximum accuracy
+
+## 🤖 AI Technology
+
+This system is powered by Google Gemini AI and requires:
+- **Gemini API Key**: Required for all operations
+- **Internet Connection**: For LLM API calls
+- **Stable Network**: For reliable AI analysis
+
+All agents use advanced AI prompts and JSON parsing to provide accurate, detailed compliance analysis.
 
 ---
 
-**Note**: This system is designed for educational and demonstration purposes. For production use, ensure proper validation and compliance with your organization's policies and procedures.
+**Note**: This system is designed for educational and demonstration purposes. For production use, ensure proper validation and compliance with your organization's policies.
