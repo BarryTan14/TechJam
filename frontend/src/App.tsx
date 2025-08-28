@@ -1,142 +1,125 @@
-import { Card, Row, Col, Table, Input, Collapse, CollapseProps } from 'antd';
-import { ResponsiveChoropleth } from '@nivo/geo'
-import countries from './world_countries.json'
-import { useState } from 'react';
+import { Table, Button, Popconfirm, Row, Modal, Space, Form, Select, Input } from "antd"
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
+import { useState } from "react";
 
-const CollapsableFilter = () => {
-    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-
-    // Selection handler
-    const rowSelection = {
-        selectedRowKeys,
-        onChange: (newSelectedRowKeys: React.Key[], selectedRows: any[]) => {
-            setSelectedRowKeys(newSelectedRowKeys);
-        },
-    };
-
-    const collapseItems: CollapseProps['items'] = [
+const tableCol = (onEditDetail: (detail: any) => void, onDelete: (detail: any) => void) => [
     {
-        key: '1',
-        label: 'Features',
-        children: 
-        <>
-            <Table 
-                columns={[{
-                    title: "Features",
-                    dataIndex: "name"
-                }]}
-                dataSource={[{
-                    "name": "Feature 1"
-                }]}
-                rowSelection={rowSelection}
+        title: "ID",
+        dataIndex: "id",
+        key: "id",
+    },
+    {
+        title: "Name",
+        dataIndex: "name",
+        key: "name",
+    },
+    {
+        title: "Description Status",
+        dataIndex: "status",
+        key: "status",
+    },
+    {
+    key: "Actions",
+    render: (_: any, record: any) => (
+      <div key={record.id} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Button onClick={() => onEditDetail(record)}>
+          <EditOutlined />
+        </Button>
+        &nbsp;
+        <Popconfirm
+          title="Delete the PRD?"
+          description="Are you sure to delete this?"
+          okText="Yes"
+          cancelText="No"
+          onConfirm={() => onDelete(record)}
+        >
+          <Button>
+            <DeleteOutlined />
+          </Button>
+        </Popconfirm>
+      </div>
+    ),  
+  },
+]
+
+const sampleData = [
+    {
+        "id": 1,
+        "name": "XXX Name",
+        "status": "Pending"
+    },
+    {
+        "id": 2,
+        "name": "XXX Name",
+        "status": "Review"
+    },
+]
+
+const ModalForm = () => {
+  return (
+    <Form layout="vertical">
+          <Form.Item
+            name="status"
+            label="Status"
+          >
+            <Select 
+              placeholder="Please select status"
+            >
+            </Select>
+          </Form.Item>        
+          <Form.Item
+            name="name"
+            label="Name"
+          >
+            <Input 
+              placeholder="Enter name of PRD" 
             />
-            <Input placeholder='Input Feature ID'/>
-        </>,
-    },
-    {
-        key: '2',
-        label: 'Region',
-        children: <></>,
-    },
-    {
-        key: '3',
-        label: 'Others',
-        children: <></>,
-    },
-    ];
-
-    return (
-        <Collapse items={collapseItems} defaultActiveKey={['1']} />
-    )
+          </Form.Item>
+    </Form>
+  )
 }
 
+export default function App() {
+    const navigate = useNavigate();
+    const [openModal, setOpenModal] = useState(false)
 
-const sampleHeatMapData = 
-    [
-        {
-            "id": "AFG",
-            "value": 863184
-        },
-        {
-            "id": "AGO",
-            "value": 52326
-        },
-    ]
+    // Following two functions is to handle new detail
+    const showModal = () => {
+        setOpenModal(true);
+    };
 
-export default function Dashboard() {
+    const onCloseModal = () => {
+        setOpenModal(false);
+    };
+
     return (
         <div style={{ padding: 24 }}>
-            <h1 className='text-3xl font-extrabold' style={{"marginTop": 0}}>DASHBOARD</h1>
-            <Row className="mt-2" justify="space-evenly">
-                <Col span={5}>
-                    <Card title="Filtering">
-                        <CollapsableFilter />
-                    </Card>
-                </Col>
-                <Col span={12}>
-                    <Card>
-                        <div style={{ height: 400 }}>
-                        <ResponsiveChoropleth /* or Choropleth for fixed dimensions */
-                            data={sampleHeatMapData}
-                            features={countries.features}
-                            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-                            colors="nivo"
-                            domain={[0, 1000000]}
-                            unknownColor="#666666"
-                            label="properties.name"
-                            valueFormat=".2s"
-                            enableGraticule={true}
-                            graticuleLineColor="#dddddd"
-                            borderWidth={0.5}
-                            borderColor="#152538"
-                            legends={[
-                                {
-                                    anchor: 'bottom-left',
-                                    direction: 'column',
-                                    justify: true,
-                                    translateX: 20,
-                                    translateY: -100,
-                                    itemsSpacing: 0,
-                                    itemWidth: 94,
-                                    itemHeight: 18,
-                                    itemDirection: 'left-to-right',
-                                    itemTextColor: '#444444',
-                                    itemOpacity: 0.85,
-                                    symbolSize: 18
-                                }
-                            ]}
-                        />
-                        </div>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            Here will be where the data output be at
-                        </p>
-                    </Card>
-                </Col>
-                <Col span={5}>
-                    <Card title="Feature Description">
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            Here will be where the feature description be at
-                        </p>
-                    </Card>
-                </Col>
+            <h1 className='text-3xl font-extrabold' style={{"marginTop": 0}}>PRD FORM</h1>
+            <div>
+              <Button onClick={() => navigate('/dashboard')}>View Dashboard</Button>
+            </div>
+            <Row justify="end" style={{marginBottom: "10px"}}>
+              <Button title="Add new PRD" onClick={showModal}>Add New PRD</Button>
             </Row>
-            
+            <Modal
+              title="Create a new PRD"
+              width={720}
+              open={openModal}
+              onCancel={onCloseModal}
+              okText="Submit"
+              styles={{
+              body: {
+                  paddingBottom: 80,
+              },
+              }}>
+                <ModalForm></ModalForm>
+            </Modal>
+            <Table 
+                columns={tableCol(()=>{}, () => {})}
+                dataSource={sampleData}
+                rowKey="id"
+            />
         </div>
-    );
+    )
 }
