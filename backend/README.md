@@ -44,12 +44,28 @@ A FastAPI-based backend service providing CRUD operations for MongoDB collection
    pip install -r requirements.txt
    ```
 
-2. **Set up MongoDB connection:**
-   - The connection string is already configured in `main.py`
-   - Ensure MongoDB is accessible
-   - **Note**: The system will automatically fall back to mock data if MongoDB is unavailable
+2. **Set up environment variables:**
+   ```bash
+   # Copy the example environment file
+   cp .env.example .env
+   
+   # Edit .env file with your MongoDB credentials
+   # Replace 'your_mongodb_connection_string_here' with your actual MongoDB URI
+   ```
 
-3. **Run the application:**
+3. **Configure your .env file:**
+   ```bash
+   # Required: MongoDB connection string
+   MONGODB_URI=mongodb+srv://username:password@cluster.mongodb.net/database?retryWrites=true&w=majority
+   
+   # Optional: Customize these values
+   DATABASE_NAME=TechJam
+   API_HOST=0.0.0.0
+   API_PORT=5000
+   CORS_ORIGINS=*
+   ```
+
+4. **Run the application:**
    ```bash
    python main.py
    ```
@@ -336,10 +352,11 @@ Every CRUD operation automatically creates log entries:
 
 ## 🔧 Configuration
 
-- **Port**: 5000 (configurable in main.py)
-- **Host**: 0.0.0.0 (accessible from any IP)
-- **CORS**: Enabled for all origins
-- **MongoDB**: Connection string configured in main.py
+- **Port**: 5000 (configurable via `API_PORT` environment variable)
+- **Host**: 0.0.0.0 (configurable via `API_HOST` environment variable)
+- **CORS**: Configurable via `CORS_ORIGINS` environment variable
+- **MongoDB**: Connection string configured via `MONGODB_URI` environment variable
+- **Database**: Database name configurable via `DATABASE_NAME` environment variable
 - **Fallback Mode**: Automatic mock data when MongoDB is unavailable
 
 ## 🚀 Running the Application
@@ -374,26 +391,33 @@ Every CRUD operation automatically creates log entries:
 - **Error Handling**: Sensitive error details are not exposed
 - **CORS Configuration**: Configurable cross-origin access
 - **MongoDB Security**: Connection string includes authentication
+- **Environment Variables**: Sensitive credentials stored in `.env` file (not in source code)
+- **Git Security**: `.env` file is automatically excluded from version control
 
 ## 🐛 Troubleshooting
 
 ### Common Issues
 
 1. **MongoDB Connection Failed**
-   - Check MongoDB connection string
+   - Check `MONGODB_URI` environment variable in `.env` file
    - Verify network connectivity
    - Check authentication credentials
    - **Note**: System will automatically run in offline mode
 
-2. **Port Already in Use**
-   - Change port in main.py
-   - Kill existing processes on port 5000
+2. **Environment Variables Not Set**
+   - Ensure `.env` file exists in the backend directory
+   - Check that `MONGODB_URI` is properly set
+   - Verify `.env` file format (no spaces around `=`)
 
-3. **Import Errors**
+3. **Port Already in Use**
+   - Change `API_PORT` in `.env` file
+   - Kill existing processes on the configured port
+
+4. **Import Errors**
    - Install all requirements: `pip install -r requirements.txt`
    - Check Python version compatibility
 
-4. **Response Validation Errors**
+5. **Response Validation Errors**
    - The system automatically adds missing timestamp fields
    - Check that all required fields are provided in requests
 

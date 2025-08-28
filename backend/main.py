@@ -9,13 +9,23 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 from bson import ObjectId
 import logging
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# MongoDB connection
-uri = "mongodb+srv://tanedric_db_user:vZkI4o5u3VnKvThk@techjam.8cvwszr.mongodb.net/?retryWrites=true&w=majority&appName=TechJam"
+# MongoDB connection from environment variables
+uri = os.getenv("MONGODB_URI")
+if not uri:
+    raise ValueError("MONGODB_URI environment variable is not set")
+
+# Database name from environment variables
+database_name = os.getenv("DATABASE_NAME", "TechJam")
 
 # Create a new client and connect to the server
 try:
@@ -23,7 +33,7 @@ try:
     # Send a ping to confirm a successful connection
     client.admin.command('ping')
     print("✅ Successfully connected to MongoDB!")
-    db = client["TechJam"]
+    db = client[database_name]
     print(f"✅ Connected to database: {db.name}")
     
     # Initialize collections
@@ -267,9 +277,10 @@ app = FastAPI(
 )
 
 # Add CORS middleware
+cors_origins = os.getenv("CORS_ORIGINS", "*").split(",")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -798,7 +809,14 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    print("🚀 Starting TechJam Backend API on port 5000...")
+    
+    # Get configuration from environment variables
+    host = os.getenv("API_HOST", "0.0.0.0")
+    port = int(os.getenv("API_PORT", "5000"))
+    
+    print("🚀 Starting TechJam Backend API...")
+    print(f"📍 Host: {host}")
+    print(f"🔌 Port: {port}")
     
     if MONGODB_CONNECTED:
         print("✅ MongoDB: Connected (Production Mode)")
@@ -806,9 +824,9 @@ if __name__ == "__main__":
         print("⚠️  MongoDB: Offline (Mock Data Mode)")
         print("💡 Data will be stored in memory but not persisted")
     
-    print("📚 API Documentation: http://localhost:5000/docs")
-    print("🔍 Health Check: http://localhost:5000/health")
-    print("🌐 API Base URL: http://localhost:5000")
+    print("📚 API Documentation: http://localhost:{port}/docs")
+    print("🔍 Health Check: http://localhost:{port}/health")
+    print("🌐 API Base URL: http://localhost:{port}")
     print("⏹️  Press Ctrl+C to stop")
     
-    uvicorn.run(app, host="0.0.0.0", port=5000)
+    uvicorn.run(app, host=host, port=port)
