@@ -1,76 +1,23 @@
-import { Card, Row, Col, Table, Input, Collapse, CollapseProps, Button, Divider } from 'antd';
+import { Card, Row, Col, Button, Select } from 'antd';
 import { ResponsiveChoropleth } from '@nivo/geo'
-import countries from '../world_countries.json'
-import { useState } from 'react';
+import countries from '../usa_states.json'
 import { useNavigate } from 'react-router-dom';
 
-const CollapsableFilter = () => {
-    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-
-    // Selection handler
-    const rowSelection = {
-        selectedRowKeys,
-        onChange: (newSelectedRowKeys: React.Key[], selectedRows: any[]) => {
-            setSelectedRowKeys(newSelectedRowKeys);
-        },
-    };
-
-    const collapseItems: CollapseProps['items'] = [
+const options = [
     {
-        key: '1',
-        label: 'Features',
-        children: 
-        <>
-            <Table 
-                columns={[{
-                    title: "Features",
-                    dataIndex: "name"
-                }]}
-                dataSource={[{
-                    "name": "Feature 1"
-                }]}
-                rowSelection={rowSelection}
-            />
-            <Input placeholder='Input Feature ID'/>
-        </>,
+        value: 'jack',
+        label: (
+                <span>Feature 1</span>
+        ),
     },
-    {
-        key: '2',
-        label: 'Region',
-        children: <></>,
-    },
-    {
-        key: '3',
-        label: 'Status',
-        children: <></>,
-    },
-    {
-        key: '4',
-        label: 'Others',
-        children: <></>,
-    },
-    ];
-
-    return (
-        <Collapse items={collapseItems} defaultActiveKey={['1']} />
-    )
-}
-
+]
 
 const sampleHeatMapData = 
     [
         {
-            "id": "USA",
-            "value": 863184
-        },
-        {
-            "id": "Alaska",
+            "id": "AK",
             "value": 50000
         },
-        {
-            "id": "Hawaii",
-            "value": 450000
-        }
     ]
 
 const signOut = () => {
@@ -96,15 +43,26 @@ export default function Dashboard() {
               <Button style={{ marginRight: '10px' }} onClick={() => navigate('/')}>Go to PRD Form</Button>
               <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
             </div>
-            <Row className="mt-2" justify="space-evenly">
+            <Row justify="space-evenly">
                 <Col span={5}>
-                    <Card title="Filtering">
-                        <CollapsableFilter />
+                    <Card title="PRD" style={{marginBottom: "10px"}}>
+                        <span> STH STH STH </span>
+                    </Card>
+                    <Card title="Feature" style={{marginBottom: "10px"}}>
+                       <Select
+                        style={{ width: 120 }}
+                        onChange={() => {}}
+                        options={options}
+                        />
+                        <span style={{ display: "block" }}>Name: {}</span>
+                        <span style={{ display: "block" }}>Description: {}</span>
+                        <span style={{ display: "block" }}>Status: {}</span>
+                        <span style={{ display: "block" }}>Latest Update: {}</span>
                     </Card>
                 </Col>
                 <Col span={12}>
                     <Card>
-                        <div style={{ height: 400 }}>
+                        <div style={{ minHeight: 400 }}>
                         <ResponsiveChoropleth /* or Choropleth for fixed dimensions */
                             data={sampleHeatMapData}
                             features={countries.features}
@@ -114,8 +72,8 @@ export default function Dashboard() {
                             unknownColor="#666666"
                             label="properties.name"
                             valueFormat=".2s"
-                            enableGraticule={true}
-                            graticuleLineColor="#dddddd"
+                            // enableGraticule={true}
+                            // graticuleLineColor="#dddddd"
                             borderWidth={0.5}
                             borderColor="#152538"
                             legends={[
@@ -134,52 +92,28 @@ export default function Dashboard() {
                                     symbolSize: 18
                                 }
                             ]}
-                            projectionScale={255}
-                            projectionTranslation={[1.48, 1.15]}
+                            projectionScale={260}
+                            projectionTranslation={[1.4, 1.2]}
                         />
                         </div>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            Analysis HERE
-                        </p>
                     </Card>
                 </Col>
                 <Col span={5}>
-                    <Card>
-                        <h3>PRD</h3>
-                        <Divider></Divider>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            PRD description HERE
+                    <Card style={{marginBottom: "10px"}} title="Analysis">
+                        <p>
+                            Analysis HERE
                         </p>
-                        <div style={{marginTop:"50px", marginBottom:"50px"}}></div>
-                        <h3>Feature</h3>
-                        <Divider></Divider>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            Feature description HERE
+                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
+                            <Button style={{marginRight:"10px"}}>Upload</Button>
+                        </div>
+                    </Card>
+                    <Card title="Recommendation">
+                        <p>
+                            Recommendation HERE
                         </p>
+                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px"}} >
+                            <Button style={{marginRight:"10px"}}>Approve</Button><Button>Reject</Button>
+                        </div>
                     </Card>
                 </Col>
             </Row>
