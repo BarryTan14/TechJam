@@ -1,7 +1,8 @@
-import { Card, Row, Col, Button, Select } from 'antd';
+import { Card, Row, Col, Button, Select, Modal } from 'antd';
 import { ResponsiveChoropleth } from '@nivo/geo'
 import countries from '../usa_states.json'
 import { useNavigate } from 'react-router-dom';
+import { SetStateAction, useState } from 'react';
 
 const options = [
     {
@@ -38,6 +39,19 @@ export default function Dashboard() {
       window.location.href = "./login"
       return
     }
+
+    const [openModal, setOpenModal] = useState(false);
+    const [buttonValue, setButtonValue] = useState("")
+
+    const showModal = (value: SetStateAction<string>) => {
+        setOpenModal(true);
+        setButtonValue(value)
+    };
+
+    const onCloseModal = () => {
+        setOpenModal(false);
+        setButtonValue("")
+    };
 
     const navigate = useNavigate();
 
@@ -115,8 +129,21 @@ export default function Dashboard() {
                             Recommendation HERE
                         </p>
                         <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px"}} >
-                            <Button style={{marginRight:"10px"}}>Approve</Button><Button>Reject</Button>
+                            <Button style={{marginRight:"10px"}} onClick={() => showModal('approve')}>Approve</Button><Button onClick={() => showModal('reject')} >Reject</Button>
                         </div>
+                        <Modal
+                            title="Recommendation(s)"
+                            onCancel={onCloseModal}
+                            onOk={onCloseModal}
+                            visible={openModal}
+                        >
+                            <p>
+                                Feature Name: {} <br />
+                                Agent: {} <br />
+                                Reason of {buttonValue === 'approve' ? 'approval' : "rejection"}: {} <br />
+                                Evidence (optional): <Button>Upload</Button>
+                            </p>
+                        </Modal>
                     </Card>
                 </Col>
             </Row>   
