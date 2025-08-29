@@ -52,7 +52,6 @@ export default function Logs() {
                 <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
             </div>
             <div style={{"marginBottom": "10px"}}>
-              <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button>
               <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
             </div>
             <Table 

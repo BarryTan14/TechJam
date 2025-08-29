@@ -16,7 +16,15 @@ const sampleHeatMapData =
     [
         {
             "id": "AK",
-            "value": 50000
+            "value": 0.5,
+        },
+        {
+            "id": "NY",
+            "value": 1,
+        },
+        {
+            "id": "CA",
+            "value": 0,
         },
     ]
 
@@ -34,7 +42,7 @@ export default function Dashboard() {
     const navigate = useNavigate();
 
     return (
-        <div style={{ padding: 24 }}>
+        <div style={{ padding: 20 }}>
             <div style={{display: "flex"}}>
                 <h1 style={{"marginTop": 0}}>DASHBOARD</h1>
                 <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
@@ -45,12 +53,15 @@ export default function Dashboard() {
             </div>
             <Row justify="space-evenly">
                 <Col span={5}>
-                    <Card title="PRD" style={{marginBottom: "10px"}}>
+                    <Card title="PRD" style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}}>
                         <span> STH STH STH </span>
+                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
+                            <Button style={{marginRight:"10px"}}>Upload</Button>
+                        </div>
                     </Card>
-                    <Card title="Feature" style={{marginBottom: "10px"}}>
+                    <Card title="Feature" style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}}>
                        <Select
-                        style={{ width: 120 }}
+                        style={{ width: "100%", marginBottom: "10px" }}
                         onChange={() => {}}
                         options={options}
                         />
@@ -61,53 +72,45 @@ export default function Dashboard() {
                     </Card>
                 </Col>
                 <Col span={12}>
-                    <Card>
-                        <div style={{ minHeight: 400 }}>
+                    <Card title="UNITED STATES OF AMERICA" headStyle={{ textAlign: 'center' }}>
+                        <div style={{ height: 365 }}>
                         <ResponsiveChoropleth /* or Choropleth for fixed dimensions */
                             data={sampleHeatMapData}
                             features={countries.features}
-                            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-                            colors="nivo"
-                            domain={[0, 1000000]}
+                            colors={['#008000', '#FFA500', '#FF0000']}
+                            domain={[0, 1]}
                             unknownColor="#666666"
                             label="properties.name"
                             valueFormat=".2s"
-                            // enableGraticule={true}
-                            // graticuleLineColor="#dddddd"
                             borderWidth={0.5}
                             borderColor="#152538"
-                            legends={[
-                                {
-                                    anchor: 'bottom-left',
-                                    direction: 'column',
-                                    justify: true,
-                                    translateX: 20,
-                                    translateY: -100,
-                                    itemsSpacing: 0,
-                                    itemWidth: 94,
-                                    itemHeight: 18,
-                                    itemDirection: 'left-to-right',
-                                    itemTextColor: '#444444',
-                                    itemOpacity: 0.85,
-                                    symbolSize: 18
-                                }
-                            ]}
-                            projectionScale={260}
-                            projectionTranslation={[1.4, 1.2]}
+                            projectionScale={515}
+                            projectionTranslation={[2.1, 1.4]}
                         />
+                            <div style={{ position: 'absolute', right: 10, bottom: 10, background: 'white', padding: 10, borderRadius: 6 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                                <div style={{ width: 15, height: 15, background: '#FF0000', marginRight: 8 }}></div>
+                                    <span>High</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                                <div style={{ width: 15, height: 15, background: '#FFA500', marginRight: 8 }}></div>
+                                    <span>Medium</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{ width: 15, height: 15, background: '#008000', marginRight: 8 }}></div>
+                                    <span>Low</span>
+                                </div>
+                            </div>
                         </div>
                     </Card>
                 </Col>
                 <Col span={5}>
-                    <Card style={{marginBottom: "10px"}} title="Analysis">
+                    <Card style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}} title="Analysis">
                         <p>
-                            Analysis HERE
+                            Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE
                         </p>
-                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
-                            <Button style={{marginRight:"10px"}}>Upload</Button>
-                        </div>
                     </Card>
-                    <Card title="Recommendation">
+                    <Card style={{maxHeight: "40%", overflowY: "scroll"}} title="Recommendation">
                         <p>
                             Recommendation HERE
                         </p>
@@ -116,8 +119,7 @@ export default function Dashboard() {
                         </div>
                     </Card>
                 </Col>
-            </Row>
-            
+            </Row>   
         </div>
     );
 }
