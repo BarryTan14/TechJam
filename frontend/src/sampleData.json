@@ -1,0 +1,2876 @@
+{
+  "workflow_metadata": {
+    "workflow_id": "workflow_20250829_151409",
+    "start_time": "2025-08-29T15:14:09.395891",
+    "end_time": "2025-08-29T15:21:16.581025",
+    "total_processing_time": 427.185134
+  },
+  "prd_info": {
+    "prd_id": "prd_20250829_151409",
+    "prd_name": "Trial run of video replies in EU",
+    "prd_description": "Product requirements document for compliance analysis",
+    "prd_content": "Roll out video reply functionality to users in EEA only. GH will manage exposure control, and BB is used to baseline feedback.",
+    "metadata": {
+      "document_type": "product_requirements",
+      "analysis_date": "2025-08-29T15:14:09.393874",
+      "word_count": 22
+    }
+  },
+  "prd_parser_output": {
+    "agent_name": "PRD Parser",
+    "input_data": {
+      "prd_name": "Trial run of video replies in EU",
+      "prd_description": "Product requirements document for compliance analysis",
+      "prd_content": "Roll out video reply functionality to users in EEA only. GH will manage exposure control, and BB is used to baseline feedback."
+    },
+    "thought_process": "Used LLM with JSON extraction",
+    "analysis_result": {
+      "extracted_features": [
+        {
+          "feature_id": "feature_1",
+          "feature_name": "Video Reply Functionality",
+          "feature_description": "Allows users to reply with videos.",
+          "feature_content": "Roll out video reply functionality to users in EEA only.",
+          "section": "Content",
+          "priority": "High",
+          "complexity": "Medium",
+          "data_types": [
+            "Video",
+            "User ID",
+            "Timestamp"
+          ],
+          "user_impact": "Enables richer communication options for users.",
+          "technical_requirements": [
+            "Video storage",
+            "Video processing",
+            "Integration with existing messaging system"
+          ],
+          "compliance_considerations": [
+            "GDPR"
+          ]
+        },
+        {
+          "feature_id": "feature_2",
+          "feature_name": "Exposure Control (GH)",
+          "feature_description": "GH manages exposure control, likely for A/B testing or staged rollout.",
+          "feature_content": "GH will manage exposure control",
+          "section": "Content",
+          "priority": "High",
+          "complexity": "Medium",
+          "data_types": [
+            "User ID",
+            "Experiment Group"
+          ],
+          "user_impact": "Controls which users have access to the video reply feature.",
+          "technical_requirements": [
+            "Integration with GH system"
+          ],
+          "compliance_considerations": [
+            "GDPR (data minimization)"
+          ]
+        },
+        {
+          "feature_id": "feature_3",
+          "feature_name": "Feedback Collection (BB)",
+          "feature_description": "Collects user feedback via the BB system.",
+          "feature_content": "BB is used to baseline feedback.",
+          "section": "Content",
+          "priority": "Medium",
+          "complexity": "Low",
+          "data_types": [
+            "Feedback Text/Video",
+            "User ID",
+            "Timestamp"
+          ],
+          "user_impact": "Allows users to provide feedback on the video reply feature.",
+          "technical_requirements": [
+            "Integration with BB system"
+          ],
+          "compliance_considerations": [
+            "GDPR (purpose limitation, data minimization)"
+          ]
+        },
+        {
+          "feature_id": "feature_4",
+          "feature_name": "EEA Region Restriction",
+          "feature_description": "Restricts the video reply functionality to users within the EEA region.",
+          "feature_content": "Roll out video reply functionality to users in EEA only.",
+          "section": "Content",
+          "priority": "High",
+          "complexity": "Low",
+          "data_types": [
+            "User Location"
+          ],
+          "user_impact": "Only users in the EEA will have access to this feature.",
+          "technical_requirements": [
+            "Geolocation services"
+          ],
+          "compliance_considerations": [
+            "GDPR (territorial scope)"
+          ]
+        }
+      ],
+      "total_features": 4,
+      "analysis_summary": "Four features were extracted: Video Reply Functionality, Exposure Control by GH, Feedback Collection via BB, and EEA Region Restriction.  These cover the functional, operational, and compliance aspects outlined in the PRD.  The primary focus is on the new video reply feature with supporting features to manage its rollout and gather feedback. The EEA restriction emphasizes GDPR compliance as a key requirement."
+    },
+    "confidence_score": 0.9,
+    "processing_time": 10.703378,
+    "timestamp": "2025-08-29T15:14:20.099269"
+  },
+  "extracted_features": [
+    {
+      "feature_id": "feature_1",
+      "feature_name": "Video Reply Functionality",
+      "feature_description": "Allows users to reply with videos.",
+      "feature_content": "Roll out video reply functionality to users in EEA only.",
+      "section": "Content",
+      "priority": "High",
+      "complexity": "Medium",
+      "data_types": [
+        "Video",
+        "User ID",
+        "Timestamp"
+      ],
+      "user_impact": "Enables richer communication options for users.",
+      "technical_requirements": [
+        "Video storage",
+        "Video processing",
+        "Integration with existing messaging system"
+      ],
+      "compliance_considerations": [
+        "GDPR"
+      ]
+    },
+    {
+      "feature_id": "feature_2",
+      "feature_name": "Exposure Control (GH)",
+      "feature_description": "GH manages exposure control, likely for A/B testing or staged rollout.",
+      "feature_content": "GH will manage exposure control",
+      "section": "Content",
+      "priority": "High",
+      "complexity": "Medium",
+      "data_types": [
+        "User ID",
+        "Experiment Group"
+      ],
+      "user_impact": "Controls which users have access to the video reply feature.",
+      "technical_requirements": [
+        "Integration with GH system"
+      ],
+      "compliance_considerations": [
+        "GDPR (data minimization)"
+      ]
+    },
+    {
+      "feature_id": "feature_3",
+      "feature_name": "Feedback Collection (BB)",
+      "feature_description": "Collects user feedback via the BB system.",
+      "feature_content": "BB is used to baseline feedback.",
+      "section": "Content",
+      "priority": "Medium",
+      "complexity": "Low",
+      "data_types": [
+        "Feedback Text/Video",
+        "User ID",
+        "Timestamp"
+      ],
+      "user_impact": "Allows users to provide feedback on the video reply feature.",
+      "technical_requirements": [
+        "Integration with BB system"
+      ],
+      "compliance_considerations": [
+        "GDPR (purpose limitation, data minimization)"
+      ]
+    },
+    {
+      "feature_id": "feature_4",
+      "feature_name": "EEA Region Restriction",
+      "feature_description": "Restricts the video reply functionality to users within the EEA region.",
+      "feature_content": "Roll out video reply functionality to users in EEA only.",
+      "section": "Content",
+      "priority": "High",
+      "complexity": "Low",
+      "data_types": [
+        "User Location"
+      ],
+      "user_impact": "Only users in the EEA will have access to this feature.",
+      "technical_requirements": [
+        "Geolocation services"
+      ],
+      "compliance_considerations": [
+        "GDPR (territorial scope)"
+      ]
+    }
+  ],
+  "feature_compliance_results": [
+    {
+      "feature": {
+        "feature_id": "feature_1",
+        "feature_name": "Video Reply Functionality",
+        "feature_description": "Allows users to reply with videos.",
+        "feature_content": "Roll out video reply functionality to users in EEA only.",
+        "section": "Content",
+        "priority": "High",
+        "complexity": "Medium",
+        "data_types": [
+          "Video",
+          "User ID",
+          "Timestamp"
+        ],
+        "user_impact": "Enables richer communication options for users.",
+        "technical_requirements": [
+          "Video storage",
+          "Video processing",
+          "Integration with existing messaging system"
+        ],
+        "compliance_considerations": [
+          "GDPR"
+        ]
+      },
+      "compliance_flags": [
+        "GDPR",
+        "CCPA",
+        "PIPL",
+        "LGPD"
+      ],
+      "risk_level": "low",
+      "confidence_score": 0.7,
+      "requires_human_review": true,
+      "reasoning": "Wyoming has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+      "recommendations": [
+        "Implement explicit consent mechanism for video recording and processing.",
+        "Establish a clear data retention policy for video replies, specifying the retention period and deletion procedures.",
+        "Conduct a Privacy Impact Assessment (PIA) to thoroughly evaluate the data protection risks associated with the video reply functionality."
+      ],
+      "non_compliant_states": [
+        "CA",
+        "CO",
+        "CT",
+        "FL",
+        "IL",
+        "NY",
+        "TX",
+        "UT",
+        "VA",
+        "WA"
+      ],
+      "state_compliance_scores": {
+        "AL": {
+          "state_code": "AL",
+          "state_name": "Alabama",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Alabama has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "AK": {
+          "state_code": "AK",
+          "state_name": "Alaska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Alaska has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "AZ": {
+          "state_code": "AZ",
+          "state_name": "Arizona",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Arizona has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "AR": {
+          "state_code": "AR",
+          "state_name": "Arkansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Arkansas has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "CA": {
+          "state_code": "CA",
+          "state_name": "California",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Feature likely collects personal data (video, audio) which falls under CCPA/CPRA.  California requires explicit consent, comprehensive user rights (access, deletion, correction), and detailed privacy notices.",
+          "non_compliant_regulations": [
+            "CCPA",
+            "CPRA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Provide notice of collection and use"
+          ],
+          "notes": "California has the strictest privacy laws in the US."
+        },
+        "CO": {
+          "state_code": "CO",
+          "state_name": "Colorado",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The CPA requires consent for processing sensitive data, which video replies may contain (biometric data).  User rights and data protection assessments are also required.",
+          "non_compliant_regulations": [
+            "CPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Conduct data protection assessments"
+          ],
+          "notes": "Colorado's CPA has strong data protection requirements."
+        },
+        "CT": {
+          "state_code": "CT",
+          "state_name": "Connecticut",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The CTDPA requires consent for processing personal data. User rights (access, deletion, portability) must be implemented.",
+          "non_compliant_regulations": [
+            "CTDPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Provide data portability"
+          ],
+          "notes": "Connecticut's CTDPA has strong data protection requirements."
+        },
+        "DE": {
+          "state_code": "DE",
+          "state_name": "Delaware",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Delaware has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "FL": {
+          "state_code": "FL",
+          "state_name": "Florida",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "Video replies could capture biometric identifiers subject to the FDBR.  The FDBR imposes requirements related to notice, security, and data processing of biometric information. ",
+          "non_compliant_regulations": [
+            "FDBR"
+          ],
+          "required_actions": [
+            "Implement a designated privacy contact",
+            "Update privacy policy with biometric information handling",
+            "Comply with biometric data security requirements"
+          ],
+          "notes": "Florida's digital bill of rights may apply depending on data collected."
+        },
+        "GA": {
+          "state_code": "GA",
+          "state_name": "Georgia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Georgia has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "HI": {
+          "state_code": "HI",
+          "state_name": "Hawaii",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Hawaii has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "ID": {
+          "state_code": "ID",
+          "state_name": "Idaho",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Idaho has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "IL": {
+          "state_code": "IL",
+          "state_name": "Illinois",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Video replies may capture biometric identifiers (facial geometry, voiceprints).  Illinois' BIPA requires informed written consent for collection and use of biometric data, along with a public data retention policy.",
+          "non_compliant_regulations": [
+            "BIPA"
+          ],
+          "required_actions": [
+            "Implement BIPA compliant consent procedures for biometric data",
+            "Establish a written biometric information policy"
+          ],
+          "notes": "Illinois BIPA has strict requirements for biometric data handling."
+        },
+        "IN": {
+          "state_code": "IN",
+          "state_name": "Indiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Indiana has no comprehensive data privacy law. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "IA": {
+          "state_code": "IA",
+          "state_name": "Iowa",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Iowa has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "KS": {
+          "state_code": "KS",
+          "state_name": "Kansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Kansas has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "KY": {
+          "state_code": "KY",
+          "state_name": "Kentucky",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Kentucky has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "LA": {
+          "state_code": "LA",
+          "state_name": "Louisiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Louisiana has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "ME": {
+          "state_code": "ME",
+          "state_name": "Maine",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Maine has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MD": {
+          "state_code": "MD",
+          "state_name": "Maryland",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Maryland has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MA": {
+          "state_code": "MA",
+          "state_name": "Massachusetts",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Massachusetts has no comprehensive data privacy law yet, though one is in development. Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Monitor future MA privacy laws"
+        },
+        "MI": {
+          "state_code": "MI",
+          "state_name": "Michigan",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Michigan has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MN": {
+          "state_code": "MN",
+          "state_name": "Minnesota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Minnesota has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MS": {
+          "state_code": "MS",
+          "state_name": "Mississippi",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Mississippi has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MO": {
+          "state_code": "MO",
+          "state_name": "Missouri",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Missouri has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MT": {
+          "state_code": "MT",
+          "state_name": "Montana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Montana has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NE": {
+          "state_code": "NE",
+          "state_name": "Nebraska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nebraska has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NV": {
+          "state_code": "NV",
+          "state_name": "Nevada",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nevada has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NH": {
+          "state_code": "NH",
+          "state_name": "New Hampshire",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Hampshire has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NJ": {
+          "state_code": "NJ",
+          "state_name": "New Jersey",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Jersey has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NM": {
+          "state_code": "NM",
+          "state_name": "New Mexico",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Mexico has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NY": {
+          "state_code": "NY",
+          "state_name": "New York",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The NY SHIELD Act requires reasonable data security for private information, and the NY Biometric Privacy Act may apply depending on how video replies are processed and if biometric identifiers are extracted or stored.",
+          "non_compliant_regulations": [
+            "NY SHIELD Act",
+            "NY Biometric Privacy Act"
+          ],
+          "required_actions": [
+            "Implement reasonable data security safeguards",
+            "Update privacy policy regarding biometric data handling and retention",
+            "Potentially obtain consent for biometric data collection"
+          ],
+          "notes": "NY SHIELD Act has broad security requirements. Biometric data is a growing area of concern."
+        },
+        "NC": {
+          "state_code": "NC",
+          "state_name": "North Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "North Carolina has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "ND": {
+          "state_code": "ND",
+          "state_name": "North Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "North Dakota has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "OH": {
+          "state_code": "OH",
+          "state_name": "Ohio",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Ohio has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "OK": {
+          "state_code": "OK",
+          "state_name": "Oklahoma",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Oklahoma has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "OR": {
+          "state_code": "OR",
+          "state_name": "Oregon",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Oregon has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "PA": {
+          "state_code": "PA",
+          "state_name": "Pennsylvania",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Pennsylvania has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "RI": {
+          "state_code": "RI",
+          "state_name": "Rhode Island",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Rhode Island has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "SC": {
+          "state_code": "SC",
+          "state_name": "South Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "South Carolina has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "SD": {
+          "state_code": "SD",
+          "state_name": "South Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "South Dakota has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "TN": {
+          "state_code": "TN",
+          "state_name": "Tennessee",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Tennessee has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "TX": {
+          "state_code": "TX",
+          "state_name": "Texas",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The TDPSA requires opt-out for the sale of personal data and consent for processing sensitive data, which may include biometric information from video replies.  Data minimization practices are also recommended.",
+          "non_compliant_regulations": [
+            "TDPSA"
+          ],
+          "required_actions": [
+            "Implement consent mechanism for sensitive data",
+            "Provide opt-out for sale of personal data",
+            "Data minimization practices"
+          ],
+          "notes": "Texas law focuses on consent and data sales."
+        },
+        "UT": {
+          "state_code": "UT",
+          "state_name": "Utah",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The UCPA mandates responsibilities for data controllers related to processing personal data, including data minimization, purpose limitation, and secure data processing.  Data subject rights (access, deletion, portability) must also be addressed.",
+          "non_compliant_regulations": [
+            "UCPA"
+          ],
+          "required_actions": [
+            "Implement a data processing agreement for vendors processing personal data",
+            "Add data deletion rights",
+            "Provide data portability"
+          ],
+          "notes": ""
+        },
+        "VT": {
+          "state_code": "VT",
+          "state_name": "Vermont",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Vermont has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "VA": {
+          "state_code": "VA",
+          "state_name": "Virginia",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The VCDPA requires consent for processing sensitive data, such as biometric data that could be derived from video replies. User rights and data protection assessments are also required.",
+          "non_compliant_regulations": [
+            "VCDPA"
+          ],
+          "required_actions": [
+            "Implement consent management for sensitive data",
+            "Add data deletion rights",
+            "Conduct data protection assessments"
+          ],
+          "notes": ""
+        },
+        "WA": {
+          "state_code": "WA",
+          "state_name": "Washington",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "If video replies capture health information (e.g., discussion of conditions), the My Health My Data Act applies with strict consent and processing requirements for consumer health data.",
+          "non_compliant_regulations": [
+            "My Health My Data Act"
+          ],
+          "required_actions": [
+            "Implement controller responsibilities and consumer rights regarding health data",
+            "Ensure appropriate consent mechanisms are in place",
+            "Conduct data protection assessments"
+          ],
+          "notes": "Washington state has specific laws related to health data."
+        },
+        "WV": {
+          "state_code": "WV",
+          "state_name": "West Virginia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "West Virginia has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "WI": {
+          "state_code": "WI",
+          "state_name": "Wisconsin",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Wisconsin has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "WY": {
+          "state_code": "WY",
+          "state_name": "Wyoming",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Wyoming has no comprehensive data privacy law.  Feature is likely compliant as long as general best practices are followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        }
+      },
+      "processing_time": 99.121057,
+      "timestamp": "2025-08-29T15:15:59.221300"
+    },
+    {
+      "feature": {
+        "feature_id": "feature_2",
+        "feature_name": "Exposure Control (GH)",
+        "feature_description": "GH manages exposure control, likely for A/B testing or staged rollout.",
+        "feature_content": "GH will manage exposure control",
+        "section": "Content",
+        "priority": "High",
+        "complexity": "Medium",
+        "data_types": [
+          "User ID",
+          "Experiment Group"
+        ],
+        "user_impact": "Controls which users have access to the video reply feature.",
+        "technical_requirements": [
+          "Integration with GH system"
+        ],
+        "compliance_considerations": [
+          "GDPR (data minimization)"
+        ]
+      },
+      "compliance_flags": [],
+      "risk_level": "low",
+      "confidence_score": 0.9,
+      "requires_human_review": true,
+      "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+      "recommendations": [
+        "Implement clear data minimization strategies for user location data.",
+        "Establish a data retention policy for user location data, specifying the duration and purpose of retention.",
+        "Document the risk assessment process and justifications clearly, including the rationale for assigned risk levels."
+      ],
+      "non_compliant_states": [
+        "CA",
+        "CO",
+        "CT",
+        "FL",
+        "IL",
+        "NY",
+        "TX",
+        "UT",
+        "VA",
+        "WA"
+      ],
+      "state_compliance_scores": {
+        "AL": {
+          "state_code": "AL",
+          "state_name": "Alabama",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "AK": {
+          "state_code": "AK",
+          "state_name": "Alaska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "AZ": {
+          "state_code": "AZ",
+          "state_name": "Arizona",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "AR": {
+          "state_code": "AR",
+          "state_name": "Arkansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "CA": {
+          "state_code": "CA",
+          "state_name": "California",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Even with no specified data types, CCPA/CPRA requires robust consent management and user rights (access, deletion, etc.) for analytics processing.  Clarity on data collected is needed.",
+          "non_compliant_regulations": [
+            "CCPA",
+            "CPRA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Provide notice of collection and purpose of use"
+          ],
+          "notes": "California has stringent privacy laws."
+        },
+        "CO": {
+          "state_code": "CO",
+          "state_name": "Colorado",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "CPA requires consumer rights and data protection assessments even for analytics processing. Clarity on data collected is needed.",
+          "non_compliant_regulations": [
+            "CPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Conduct data protection assessment"
+          ],
+          "notes": "Colorado's CPA has similar requirements to CCPA/CPRA."
+        },
+        "CT": {
+          "state_code": "CT",
+          "state_name": "Connecticut",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "CTDPA requires consent management and user rights similar to CCPA/CPRA. Clarity on data collected is needed.",
+          "non_compliant_regulations": [
+            "CTDPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Provide notice of collection and purpose of use"
+          ],
+          "notes": "Connecticut's CTDPA aligns with CCPA/CPRA."
+        },
+        "DE": {
+          "state_code": "DE",
+          "state_name": "Delaware",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "FL": {
+          "state_code": "FL",
+          "state_name": "Florida",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "FDBR mandates specific requirements related to privacy policies and consumer privacy contacts, particularly regarding targeted advertising and the sale of personal information.",
+          "non_compliant_regulations": [
+            "FDBR"
+          ],
+          "required_actions": [
+            "Designate a consumer privacy contact",
+            "Update privacy policy",
+            "Potentially implement consent management based on future rulemaking"
+          ],
+          "notes": "Florida's FDBR requires scrutiny due to the targeted advertising and sale of information aspects.  Further clarification may be needed depending on the data processed by the feature."
+        },
+        "GA": {
+          "state_code": "GA",
+          "state_name": "Georgia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "HI": {
+          "state_code": "HI",
+          "state_name": "Hawaii",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "ID": {
+          "state_code": "ID",
+          "state_name": "Idaho",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "IL": {
+          "state_code": "IL",
+          "state_name": "Illinois",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "While no specific data types are listed, if the feature collects biometric information, BIPA requires explicit consent and strict data handling policies.  Clarification is needed on data collected.",
+          "non_compliant_regulations": [
+            "BIPA"
+          ],
+          "required_actions": [
+            "Implement BIPA-compliant consent for biometric data (if any biometric data is collected)",
+            "Develop a written biometric data retention and destruction policy"
+          ],
+          "notes": "Illinois' BIPA has stringent biometric data requirements."
+        },
+        "IN": {
+          "state_code": "IN",
+          "state_name": "Indiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "IA": {
+          "state_code": "IA",
+          "state_name": "Iowa",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "KS": {
+          "state_code": "KS",
+          "state_name": "Kansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "KY": {
+          "state_code": "KY",
+          "state_name": "Kentucky",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "LA": {
+          "state_code": "LA",
+          "state_name": "Louisiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "ME": {
+          "state_code": "ME",
+          "state_name": "Maine",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MD": {
+          "state_code": "MD",
+          "state_name": "Maryland",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MA": {
+          "state_code": "MA",
+          "state_name": "Massachusetts",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No comprehensive state-level privacy regulations applicable to this feature currently. Future legislation may change this assessment.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Monitor for future privacy legislation in MA."
+        },
+        "MI": {
+          "state_code": "MI",
+          "state_name": "Michigan",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MN": {
+          "state_code": "MN",
+          "state_name": "Minnesota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MS": {
+          "state_code": "MS",
+          "state_name": "Mississippi",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MO": {
+          "state_code": "MO",
+          "state_name": "Missouri",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "MT": {
+          "state_code": "MT",
+          "state_name": "Montana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NE": {
+          "state_code": "NE",
+          "state_name": "Nebraska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NV": {
+          "state_code": "NV",
+          "state_name": "Nevada",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nevada has specific regulations related to the sale of covered information, but this feature's purpose is analytics, and no specific data types are listed. Therefore, it currently appears compliant.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Review compliance with Nevada's regulations if 'sale of covered information' becomes relevant to the feature."
+        },
+        "NH": {
+          "state_code": "NH",
+          "state_name": "New Hampshire",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NJ": {
+          "state_code": "NJ",
+          "state_name": "New Jersey",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No comprehensive state-level privacy regulations applicable to this feature currently.  Future legislation may change this assessment.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Monitor for future privacy legislation in NJ."
+        },
+        "NM": {
+          "state_code": "NM",
+          "state_name": "New Mexico",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "NY": {
+          "state_code": "NY",
+          "state_name": "New York",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The NY SHIELD Act requires reasonable data security measures regardless of the data types collected. Clarification on what data is involved is crucial for complete assessment.",
+          "non_compliant_regulations": [
+            "NY SHIELD Act"
+          ],
+          "required_actions": [
+            "Implement reasonable security measures to protect private information",
+            "Review and update breach notification policies"
+          ],
+          "notes": "New York's SHIELD Act focuses on data security practices."
+        },
+        "NC": {
+          "state_code": "NC",
+          "state_name": "North Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "ND": {
+          "state_code": "ND",
+          "state_name": "North Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "OH": {
+          "state_code": "OH",
+          "state_name": "Ohio",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "OK": {
+          "state_code": "OK",
+          "state_name": "Oklahoma",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "OR": {
+          "state_code": "OR",
+          "state_name": "Oregon",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "PA": {
+          "state_code": "PA",
+          "state_name": "Pennsylvania",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "RI": {
+          "state_code": "RI",
+          "state_name": "Rhode Island",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "SC": {
+          "state_code": "SC",
+          "state_name": "South Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "SD": {
+          "state_code": "SD",
+          "state_name": "South Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "TN": {
+          "state_code": "TN",
+          "state_name": "Tennessee",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "TX": {
+          "state_code": "TX",
+          "state_name": "Texas",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "TDPSA requires consent for the processing of sensitive data and offers consumer rights similar to other comprehensive privacy laws. Clarity on data collected is needed.",
+          "non_compliant_regulations": [
+            "TDPSA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Update privacy policy"
+          ],
+          "notes": "Texas's TDPSA has requirements similar to CCPA/CPRA and other state laws."
+        },
+        "UT": {
+          "state_code": "UT",
+          "state_name": "Utah",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "UCPA requires data controllers to minimize data collection and limit the processing to specified, legitimate purposes.  Clarity on data collected is needed.",
+          "non_compliant_regulations": [
+            "UCPA"
+          ],
+          "required_actions": [
+            "Implement consent management for selling or sharing of sensitive data",
+            "Establish data minimization and purpose limitation practices"
+          ],
+          "notes": "Utah's UCPA focuses on data minimization."
+        },
+        "VT": {
+          "state_code": "VT",
+          "state_name": "Vermont",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "VA": {
+          "state_code": "VA",
+          "state_name": "Virginia",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "VCDPA requires consumer rights and data protection assessments similar to CCPA/CPRA and other state comprehensive privacy laws. Clarity on data collected is needed.",
+          "non_compliant_regulations": [
+            "VCDPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Conduct data protection assessment"
+          ],
+          "notes": "Virginia's VCDPA has requirements similar to other state laws."
+        },
+        "WA": {
+          "state_code": "WA",
+          "state_name": "Washington",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "If consumer health data is involved, even for analytics, the My Health My Data Act imposes strict requirements like consent and data minimization.  If no health data is involved, the CPA still applies and necessitates updates to privacy policies, consent management, etc. Clarity is required on data collected.",
+          "non_compliant_regulations": [
+            "My Health My Data Act",
+            "CPA"
+          ],
+          "required_actions": [
+            "Implement strict consent and data minimization practices if health data is processed",
+            "Update privacy policy"
+          ],
+          "notes": "Washington has stringent regulations for health data."
+        },
+        "WV": {
+          "state_code": "WV",
+          "state_name": "West Virginia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "WI": {
+          "state_code": "WI",
+          "state_name": "Wisconsin",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        },
+        "WY": {
+          "state_code": "WY",
+          "state_name": "Wyoming",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "No specific state-level privacy regulations applicable to this low-risk feature with no specified data types processed for analytics.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": ""
+        }
+      },
+      "processing_time": 84.580704,
+      "timestamp": "2025-08-29T15:17:23.803025"
+    },
+    {
+      "feature": {
+        "feature_id": "feature_3",
+        "feature_name": "Feedback Collection (BB)",
+        "feature_description": "Collects user feedback via the BB system.",
+        "feature_content": "BB is used to baseline feedback.",
+        "section": "Content",
+        "priority": "Medium",
+        "complexity": "Low",
+        "data_types": [
+          "Feedback Text/Video",
+          "User ID",
+          "Timestamp"
+        ],
+        "user_impact": "Allows users to provide feedback on the video reply feature.",
+        "technical_requirements": [
+          "Integration with BB system"
+        ],
+        "compliance_considerations": [
+          "GDPR (purpose limitation, data minimization)"
+        ]
+      },
+      "compliance_flags": [
+        "GDPR",
+        "CCPA",
+        "PIPL",
+        "LGPD"
+      ],
+      "risk_level": "low",
+      "confidence_score": 0.9,
+      "requires_human_review": true,
+      "reasoning": "Wyoming does not have a comprehensive data privacy law. General best practices should be followed.",
+      "recommendations": [
+        "Implement robust data anonymization for free-text feedback fields.",
+        "Review and refine data collection practices for optional feedback fields to align with data minimization principles.",
+        "Conduct periodic data protection impact assessments (DPIAs) for the Feedback Collection feature."
+      ],
+      "non_compliant_states": [
+        "CA",
+        "CO",
+        "CT",
+        "FL",
+        "IL",
+        "NY",
+        "TX",
+        "UT",
+        "VA",
+        "WA"
+      ],
+      "state_compliance_scores": {
+        "AL": {
+          "state_code": "AL",
+          "state_name": "Alabama",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Alabama does not have a comprehensive data privacy law.  General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "AK": {
+          "state_code": "AK",
+          "state_name": "Alaska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Alaska does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "AZ": {
+          "state_code": "AZ",
+          "state_name": "Arizona",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Arizona does not have a comprehensive data privacy law at this time, though one is expected to come into effect in 2023. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies yet."
+        },
+        "AR": {
+          "state_code": "AR",
+          "state_name": "Arkansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Arkansas does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "CA": {
+          "state_code": "CA",
+          "state_name": "California",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Feature collects data for analytics, which may include personal information.  CCPA/CPRA requires specific disclosures, consent management, and consumer rights (access, deletion, correction, opt-out).",
+          "non_compliant_regulations": [
+            "CCPA",
+            "CPRA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Provide notice at collection"
+          ],
+          "notes": "California has strict privacy laws requiring explicit consent and user rights."
+        },
+        "CO": {
+          "state_code": "CO",
+          "state_name": "Colorado",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The CPA requires consumer rights similar to CCPA/CPRA, including consent management and opt-out mechanisms for certain processing activities. A data protection assessment may be required.",
+          "non_compliant_regulations": [
+            "CPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Conduct data protection assessment"
+          ],
+          "notes": "Colorado's CPA has similar requirements to CCPA."
+        },
+        "CT": {
+          "state_code": "CT",
+          "state_name": "Connecticut",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The CTDPA requires consumer rights similar to CCPA/CPRA, including consent management and opt-out of targeted advertising and sale of personal data.",
+          "non_compliant_regulations": [
+            "CTDPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Update privacy policy"
+          ],
+          "notes": "Connecticut's CTDPA also requires specific disclosures and opt-out mechanisms."
+        },
+        "DE": {
+          "state_code": "DE",
+          "state_name": "Delaware",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Delaware does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "FL": {
+          "state_code": "FL",
+          "state_name": "Florida",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The FDBR requires consent for targeted advertising. Depending on the nature of the analytics and feedback collected, consent might be needed.",
+          "non_compliant_regulations": [
+            "FDBR"
+          ],
+          "required_actions": [
+            "Implement consent management for targeted advertising",
+            "Update privacy policy"
+          ],
+          "notes": "The Florida Digital Bill of Rights requires consent for targeted advertising and sale of personal data."
+        },
+        "GA": {
+          "state_code": "GA",
+          "state_name": "Georgia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Georgia does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "HI": {
+          "state_code": "HI",
+          "state_name": "Hawaii",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Hawaii does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "ID": {
+          "state_code": "ID",
+          "state_name": "Idaho",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Idaho does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "IL": {
+          "state_code": "IL",
+          "state_name": "Illinois",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "While the feature description doesn't explicitly mention biometric data, BIPA necessitates a careful review. If any biometric data is inadvertently collected, strict compliance measures are required, including informed consent and specific data retention/destruction policies.",
+          "non_compliant_regulations": [
+            "BIPA"
+          ],
+          "required_actions": [
+            "Implement BIPA compliant consent for biometric data (if collected)",
+            "Update privacy policy with BIPA disclosures"
+          ],
+          "notes": "Illinois' BIPA has very specific requirements for biometric data."
+        },
+        "IN": {
+          "state_code": "IN",
+          "state_name": "Indiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Indiana does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "IA": {
+          "state_code": "IA",
+          "state_name": "Iowa",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Iowa does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "KS": {
+          "state_code": "KS",
+          "state_name": "Kansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Kansas does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "KY": {
+          "state_code": "KY",
+          "state_name": "Kentucky",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Kentucky does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "LA": {
+          "state_code": "LA",
+          "state_name": "Louisiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Louisiana does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "ME": {
+          "state_code": "ME",
+          "state_name": "Maine",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Maine does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "MD": {
+          "state_code": "MD",
+          "state_name": "Maryland",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Maryland does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "MA": {
+          "state_code": "MA",
+          "state_name": "Massachusetts",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Massachusetts does not have a comprehensive data privacy law yet, but has several bills under consideration. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies yet."
+        },
+        "MI": {
+          "state_code": "MI",
+          "state_name": "Michigan",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Michigan does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "MN": {
+          "state_code": "MN",
+          "state_name": "Minnesota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Minnesota does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "MS": {
+          "state_code": "MS",
+          "state_name": "Mississippi",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Mississippi does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "MO": {
+          "state_code": "MO",
+          "state_name": "Missouri",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Missouri does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "MT": {
+          "state_code": "MT",
+          "state_name": "Montana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Montana does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "NE": {
+          "state_code": "NE",
+          "state_name": "Nebraska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nebraska does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "NV": {
+          "state_code": "NV",
+          "state_name": "Nevada",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nevada has a privacy law focused on the sale of personal information.  Depending on the specific feedback collected and how it's used, this law may apply. Review is needed to confirm compliance.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Nevada law focuses on the 'sale' of personal information."
+        },
+        "NH": {
+          "state_code": "NH",
+          "state_name": "New Hampshire",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Hampshire does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "NJ": {
+          "state_code": "NJ",
+          "state_name": "New Jersey",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Jersey does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "NM": {
+          "state_code": "NM",
+          "state_name": "New Mexico",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Mexico does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "NY": {
+          "state_code": "NY",
+          "state_name": "",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The NY SHIELD Act mandates reasonable data security for all businesses collecting private information of New York residents.  Depending on the sensitivity of the feedback data, further safeguards might be necessary.",
+          "non_compliant_regulations": [
+            "NY SHIELD Act"
+          ],
+          "required_actions": [
+            "Implement reasonable data security safeguards",
+            "Update privacy policy with data security practices"
+          ],
+          "notes": "New York requires reasonable safeguards to protect data."
+        },
+        "NC": {
+          "state_code": "NC",
+          "state_name": "North Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "North Carolina does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "ND": {
+          "state_code": "ND",
+          "state_name": "North Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "North Dakota does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "OH": {
+          "state_code": "OH",
+          "state_name": "Ohio",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Ohio does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "OK": {
+          "state_code": "OK",
+          "state_name": "Oklahoma",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Oklahoma does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "OR": {
+          "state_code": "OR",
+          "state_name": "Oregon",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Oregon does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "PA": {
+          "state_code": "PA",
+          "state_name": "Pennsylvania",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Pennsylvania does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "RI": {
+          "state_code": "RI",
+          "state_name": "Rhode Island",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Rhode Island does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "SC": {
+          "state_code": "SC",
+          "state_name": "South Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "South Carolina does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "SD": {
+          "state_code": "SD",
+          "state_name": "South Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "South Dakota does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "TN": {
+          "state_code": "TN",
+          "state_name": "Tennessee",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Tennessee does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "TX": {
+          "state_code": "TX",
+          "state_name": "Texas",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "Texas' TDPSA, similar to CCPA/CPRA, requires consumer rights and consent management. It's important to analyze the specific feedback data collected to ensure compliance.",
+          "non_compliant_regulations": [
+            "TDPSA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Update privacy policy"
+          ],
+          "notes": "The Texas Data Privacy and Security Act has requirements for data processing similar to CCPA/CPRA."
+        },
+        "UT": {
+          "state_code": "UT",
+          "state_name": "Utah",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "Utah's UCPA introduces consumer rights and consent requirements. The specifics of the feedback mechanism need to be analyzed to determine compliance needs, particularly concerning opt-out mechanisms.",
+          "non_compliant_regulations": [
+            "UCPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Update privacy policy"
+          ],
+          "notes": "The Utah Consumer Privacy Act has requirements similar to CCPA/CPRA, though less stringent."
+        },
+        "VT": {
+          "state_code": "VT",
+          "state_name": "Vermont",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Vermont does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "VA": {
+          "state_code": "VA",
+          "state_name": "Virginia",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Virginia's VCDPA requires businesses to provide consumers with rights and control over their data. It's necessary to implement mechanisms for consent management, data deletion requests, and opt-out of targeted advertising.",
+          "non_compliant_regulations": [
+            "VCDPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Update privacy policy"
+          ],
+          "notes": "The Virginia Consumer Data Protection Act has similar requirements to CCPA/CPRA and the Colorado CPA."
+        },
+        "WA": {
+          "state_code": "WA",
+          "state_name": "Washington",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Washington has both a CPA and My Health My Data Act. The CPA mandates requirements like those seen in CCPA/CPRA. The My Health My Data Act adds complexity as it provides robust protections for consumer health data, impacting feedback related to health or wellness.",
+          "non_compliant_regulations": [
+            "My Health My Data Act",
+            "CPA"
+          ],
+          "required_actions": [
+            "Implement consent management",
+            "Add data deletion rights",
+            "Conduct data protection assessment",
+            "Ensure compliance with both Washington's CPA and the My Health My Data Act"
+          ],
+          "notes": "Washington state's CPA and My Health My Data Act creates complex and robust requirements."
+        },
+        "WV": {
+          "state_code": "WV",
+          "state_name": "West Virginia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "West Virginia does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "WI": {
+          "state_code": "WI",
+          "state_name": "Wisconsin",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Wisconsin does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        },
+        "WY": {
+          "state_code": "WY",
+          "state_name": "Wyoming",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Wyoming does not have a comprehensive data privacy law. General best practices should be followed.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No specific state law applies."
+        }
+      },
+      "processing_time": 105.574819,
+      "timestamp": "2025-08-29T15:19:09.377844"
+    },
+    {
+      "feature": {
+        "feature_id": "feature_4",
+        "feature_name": "EEA Region Restriction",
+        "feature_description": "Restricts the video reply functionality to users within the EEA region.",
+        "feature_content": "Roll out video reply functionality to users in EEA only.",
+        "section": "Content",
+        "priority": "High",
+        "complexity": "Low",
+        "data_types": [
+          "User Location"
+        ],
+        "user_impact": "Only users in the EEA will have access to this feature.",
+        "technical_requirements": [
+          "Geolocation services"
+        ],
+        "compliance_considerations": [
+          "GDPR (territorial scope)"
+        ]
+      },
+      "compliance_flags": [
+        "GDPR",
+        "CCPA",
+        "PIPL",
+        "LGPD"
+      ],
+      "risk_level": "low",
+      "confidence_score": 0.9,
+      "requires_human_review": true,
+      "reasoning": "Wyoming has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Wyoming.",
+      "recommendations": [
+        "Implement a clear and user-friendly consent mechanism for EEA users.",
+        "Establish a data retention policy specific to EEA user data, adhering to GDPR regulations.",
+        "Conduct penetration testing focusing on bypassing geolocation restrictions."
+      ],
+      "non_compliant_states": [
+        "CA",
+        "CO",
+        "CT",
+        "FL",
+        "IL",
+        "NY",
+        "TX",
+        "UT",
+        "VA",
+        "WA"
+      ],
+      "state_compliance_scores": {
+        "AL": {
+          "state_code": "AL",
+          "state_name": "Alabama",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Alabama has no comprehensive data privacy law. The EEA restriction, while related to GDPR, does not create specific compliance issues in Alabama.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Alabama."
+        },
+        "AK": {
+          "state_code": "AK",
+          "state_name": "Alaska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Alaska has no comprehensive data privacy law.  The EEA restriction does not trigger any specific compliance issues in Alaska.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Alaska."
+        },
+        "AZ": {
+          "state_code": "AZ",
+          "state_name": "Arizona",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Arizona has no comprehensive data privacy law.  The EEA restriction does not trigger any specific compliance issues in Arizona.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Arizona."
+        },
+        "AR": {
+          "state_code": "AR",
+          "state_name": "Arkansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Arkansas has no comprehensive data privacy law.  The EEA restriction does not trigger any specific compliance issues in Arkansas.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Arkansas."
+        },
+        "CA": {
+          "state_code": "CA",
+          "state_name": "California",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Restricting the feature to the EEA region does not exempt the company from complying with CCPA/CPRA if it collects or processes personal information of California residents. The feature needs to consider California-specific consent and data subject rights.",
+          "non_compliant_regulations": [
+            "CCPA",
+            "CPRA"
+          ],
+          "required_actions": [
+            "Implement consent management for California residents",
+            "Ensure data deletion rights for California residents",
+            "Update privacy policy to reflect California requirements"
+          ],
+          "notes": "California has the strictest privacy laws in the US requiring explicit consent and comprehensive user rights."
+        },
+        "CO": {
+          "state_code": "CO",
+          "state_name": "Colorado",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The CPA requires compliance even if the feature is restricted to the EEA. Colorado residents' data must be handled according to CPA regulations, including consent and data subject rights.",
+          "non_compliant_regulations": [
+            "CPA"
+          ],
+          "required_actions": [
+            "Implement consent management for Colorado residents",
+            "Ensure data deletion rights for Colorado residents",
+            "Update privacy policy to reflect Colorado requirements"
+          ],
+          "notes": "Colorado Privacy Act (CPA) requires compliance even with EEA restriction."
+        },
+        "CT": {
+          "state_code": "CT",
+          "state_name": "Connecticut",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The CTDPA requires compliance irrespective of the EEA restriction. Connecticut residents' data needs to be handled according to CTDPA regulations, including consent and data subject rights.",
+          "non_compliant_regulations": [
+            "CTDPA"
+          ],
+          "required_actions": [
+            "Implement consent management for Connecticut residents",
+            "Ensure data deletion rights for Connecticut residents",
+            "Update privacy policy to reflect Connecticut requirements"
+          ],
+          "notes": "Connecticut Data Privacy Act (CTDPA) necessitates compliance regardless of EEA restriction."
+        },
+        "DE": {
+          "state_code": "DE",
+          "state_name": "Delaware",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Delaware has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Delaware.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Delaware."
+        },
+        "FL": {
+          "state_code": "FL",
+          "state_name": "Florida",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "While FDBR does not have the same scope as CCPA/CPRA, it still requires certain disclosures and opt-out mechanisms for targeted advertising, even if processing is limited to EEA users.  This may require adjustments to privacy notices or consent mechanisms.",
+          "non_compliant_regulations": [
+            "FDBR"
+          ],
+          "required_actions": [
+            "Update privacy policy to reflect Florida requirements regarding targeted advertising opt-outs"
+          ],
+          "notes": "Florida's Digital Bill of Rights necessitates certain considerations for compliance."
+        },
+        "GA": {
+          "state_code": "GA",
+          "state_name": "Georgia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Georgia has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Georgia.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Georgia."
+        },
+        "HI": {
+          "state_code": "HI",
+          "state_name": "Hawaii",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Hawaii has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Hawaii.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Hawaii."
+        },
+        "ID": {
+          "state_code": "ID",
+          "state_name": "Idaho",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Idaho has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Idaho.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Idaho."
+        },
+        "IL": {
+          "state_code": "IL",
+          "state_name": "Illinois",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The Illinois Biometric Information Privacy Act (BIPA) has broad reach and might still apply even if processing is limited to EEA users. BIPA requires informed written consent for the collection and storage of biometric information, which must be carefully considered.",
+          "non_compliant_regulations": [
+            "BIPA"
+          ],
+          "required_actions": [
+            "Ensure compliance with BIPA regarding biometric data of Illinois residents, even if the feature is restricted to EEA users. This might include obtaining informed consent and establishing a publicly available biometric data retention schedule and guidelines."
+          ],
+          "notes": "BIPA requires careful consideration due to its broad application and potential for private right of action."
+        },
+        "IN": {
+          "state_code": "IN",
+          "state_name": "Indiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Indiana has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Indiana.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Indiana."
+        },
+        "IA": {
+          "state_code": "IA",
+          "state_name": "Iowa",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Iowa has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Iowa.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Iowa."
+        },
+        "KS": {
+          "state_code": "KS",
+          "state_name": "Kansas",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Kansas has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Kansas.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Kansas."
+        },
+        "KY": {
+          "state_code": "KY",
+          "state_name": "Kentucky",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Kentucky has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Kentucky.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Kentucky."
+        },
+        "LA": {
+          "state_code": "LA",
+          "state_name": "Louisiana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Louisiana has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Louisiana.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Louisiana."
+        },
+        "ME": {
+          "state_code": "ME",
+          "state_name": "Maine",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Maine has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Maine.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Maine."
+        },
+        "MD": {
+          "state_code": "MD",
+          "state_name": "Maryland",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Maryland has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Maryland.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Maryland."
+        },
+        "MA": {
+          "state_code": "MA",
+          "state_name": "Massachusetts",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Massachusetts has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Massachusetts.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Massachusetts."
+        },
+        "MI": {
+          "state_code": "MI",
+          "state_name": "Michigan",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Michigan has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Michigan.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Michigan."
+        },
+        "MN": {
+          "state_code": "MN",
+          "state_name": "Minnesota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Minnesota has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Minnesota.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Minnesota."
+        },
+        "MS": {
+          "state_code": "MS",
+          "state_name": "Mississippi",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Mississippi has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Mississippi.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Mississippi."
+        },
+        "MO": {
+          "state_code": "MO",
+          "state_name": "Missouri",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Missouri has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Missouri.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Missouri."
+        },
+        "MT": {
+          "state_code": "MT",
+          "state_name": "Montana",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Montana has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Montana.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Montana."
+        },
+        "NE": {
+          "state_code": "NE",
+          "state_name": "Nebraska",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nebraska has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Nebraska.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Nebraska."
+        },
+        "NV": {
+          "state_code": "NV",
+          "state_name": "Nevada",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Nevada has limited privacy regulations related to the sale of personal information. As the provided context does not specify the data types or processing purposes, and the feature restricts usage to the EEA, there are no apparent compliance issues in Nevada.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Nevada has limited privacy regulations focusing on the sale of personal information."
+        },
+        "NH": {
+          "state_code": "NH",
+          "state_name": "New Hampshire",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Hampshire has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in New Hampshire.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in New Hampshire."
+        },
+        "NJ": {
+          "state_code": "NJ",
+          "state_name": "New Jersey",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Jersey has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in New Jersey.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in New Jersey."
+        },
+        "NM": {
+          "state_code": "NM",
+          "state_name": "New Mexico",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "New Mexico has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in New Mexico.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in New Mexico."
+        },
+        "NY": {
+          "state_code": "NY",
+          "state_name": "New York",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The NY SHIELD Act requires companies to implement reasonable security measures to protect the personal information of New York residents. Even though the feature is restricted to EEA users, if data of New York residents is processed or stored (e.g., for other purposes), compliance with the NY SHIELD Act is required.",
+          "non_compliant_regulations": [
+            "NY SHIELD Act"
+          ],
+          "required_actions": [
+            "Ensure reasonable security measures are in place to protect the personal information of New York residents, even if the feature is restricted to the EEA. This includes implementing and maintaining a comprehensive security program."
+          ],
+          "notes": "The NY SHIELD Act requires reasonable data security measures regardless of EEA restriction."
+        },
+        "NC": {
+          "state_code": "NC",
+          "state_name": "North Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "North Carolina has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in North Carolina.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in North Carolina."
+        },
+        "ND": {
+          "state_code": "ND",
+          "state_name": "North Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "North Dakota has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in North Dakota.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in North Dakota."
+        },
+        "OH": {
+          "state_code": "OH",
+          "state_name": "Ohio",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Ohio has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Ohio.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Ohio."
+        },
+        "OK": {
+          "state_code": "OK",
+          "state_name": "Oklahoma",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Oklahoma has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Oklahoma.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Oklahoma."
+        },
+        "OR": {
+          "state_code": "OR",
+          "state_name": "Oregon",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Oregon has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Oregon.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Oregon."
+        },
+        "PA": {
+          "state_code": "PA",
+          "state_name": "Pennsylvania",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Pennsylvania has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Pennsylvania.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Pennsylvania."
+        },
+        "RI": {
+          "state_code": "RI",
+          "state_name": "Rhode Island",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Rhode Island has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Rhode Island.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Rhode Island."
+        },
+        "SC": {
+          "state_code": "SC",
+          "state_name": "South Carolina",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "South Carolina has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in South Carolina.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in South Carolina."
+        },
+        "SD": {
+          "state_code": "SD",
+          "state_name": "South Dakota",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "South Dakota has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in South Dakota.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in South Dakota."
+        },
+        "TN": {
+          "state_code": "TN",
+          "state_name": "Tennessee",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Tennessee has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Tennessee.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Tennessee."
+        },
+        "TX": {
+          "state_code": "TX",
+          "state_name": "Texas",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The TDPSA applies regardless of EEA restrictions and requires businesses to implement consent and data subject right mechanisms for Texas residents.",
+          "non_compliant_regulations": [
+            "TDPSA"
+          ],
+          "required_actions": [
+            "Implement consent management mechanisms for Texas residents, ensure data deletion rights, and update the privacy policy to address TDPSA requirements."
+          ],
+          "notes": "Texas Data Privacy and Security Act necessitates compliance even with EEA restrictions."
+        },
+        "UT": {
+          "state_code": "UT",
+          "state_name": "Utah",
+          "compliance_score": 0.5,
+          "risk_level": "Medium",
+          "reasoning": "The UCPA requires compliance even with EEA restrictions. Utah residents' data must be handled according to UCPA guidelines, including consent and data subject rights.",
+          "non_compliant_regulations": [
+            "UCPA"
+          ],
+          "required_actions": [
+            "Implement consent management and data deletion mechanisms for Utah residents, and update privacy policy to reflect UCPA requirements."
+          ],
+          "notes": "Utah Consumer Privacy Act (UCPA) necessitates compliance regardless of EEA restrictions."
+        },
+        "VT": {
+          "state_code": "VT",
+          "state_name": "Vermont",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Vermont has limited data broker regulations, but they don’t seem to conflict with the feature’s EEA restriction. Given the lack of details about data types and purposes, no specific compliance issues are apparent in Vermont.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "Vermont's data broker regulations do not directly clash with the EEA restriction."
+        },
+        "VA": {
+          "state_code": "VA",
+          "state_name": "Virginia",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "The VCDPA applies regardless of EEA restriction and requires implementing consent and data subject right mechanisms for Virginia residents.",
+          "non_compliant_regulations": [
+            "VCDPA"
+          ],
+          "required_actions": [
+            "Implement consent management and data deletion mechanisms for Virginia residents, and update privacy policy to reflect VCDPA requirements."
+          ],
+          "notes": "Virginia Consumer Data Protection Act (VCDPA) necessitates compliance even with EEA restrictions."
+        },
+        "WA": {
+          "state_code": "WA",
+          "state_name": "Washington",
+          "compliance_score": 0.2,
+          "risk_level": "High",
+          "reasoning": "Washington's My Health My Data Act introduces strong protections for consumer health data, which require specific considerations for compliance, even if processing is limited to EEA users.  Compliance with consent, data deletion, and other provisions is crucial for Washington state residents' health data.",
+          "non_compliant_regulations": [
+            "My Health My Data Act"
+          ],
+          "required_actions": [
+            "Implement requirements related to consumer health data under the My Health My Data Act for Washington residents, regardless of EEA restrictions."
+          ],
+          "notes": "Washington's My Health My Data Act requires stringent protections for consumer health data."
+        },
+        "WV": {
+          "state_code": "WV",
+          "state_name": "West Virginia",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "West Virginia has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in West Virginia.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in West Virginia."
+        },
+        "WI": {
+          "state_code": "WI",
+          "state_name": "Wisconsin",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Wisconsin has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Wisconsin.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Wisconsin."
+        },
+        "WY": {
+          "state_code": "WY",
+          "state_name": "Wyoming",
+          "compliance_score": 1.0,
+          "risk_level": "Low",
+          "reasoning": "Wyoming has no comprehensive data privacy law. The EEA restriction does not trigger any specific compliance issues in Wyoming.",
+          "non_compliant_regulations": [],
+          "required_actions": [],
+          "notes": "No comprehensive data privacy law in Wyoming."
+        }
+      },
+      "processing_time": 101.472647,
+      "timestamp": "2025-08-29T15:20:50.851439"
+    }
+  ],
+  "overall_results": {
+    "total_features": 4,
+    "overall_risk_level": "low",
+    "overall_confidence_score": 0.85,
+    "critical_compliance_issues": [],
+    "summary_recommendations": [
+      "Review and refine data collection practices for optional feedback fields to align with data minimization principles.",
+      "Implement explicit consent mechanism for video recording and processing.",
+      "Conduct a Privacy Impact Assessment (PIA) to thoroughly evaluate the data protection risks associated with the video reply functionality.",
+      "Conduct penetration testing focusing on bypassing geolocation restrictions.",
+      "Document the risk assessment process and justifications clearly, including the rationale for assigned risk levels.",
+      "Implement clear data minimization strategies for user location data.",
+      "Implement robust data anonymization for free-text feedback fields.",
+      "Implement a clear and user-friendly consent mechanism for EEA users.",
+      "Establish a data retention policy specific to EEA user data, adhering to GDPR regulations.",
+      "Conduct periodic data protection impact assessments (DPIAs) for the Feedback Collection feature."
+    ],
+    "non_compliant_states_dict": {
+      "CA": {
+        "state_name": "California",
+        "risk_score": 0.9,
+        "risk_level": "high",
+        "reasoning": "California has stringent privacy laws (CCPA/CPRA) requiring explicit consent, user rights, and specific data handling procedures. Multiple features fall short of these requirements.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "CCPA",
+          "CPRA"
+        ],
+        "required_actions": [
+          "Implement consent management",
+          "Add data deletion rights",
+          "Provide notice of collection and use",
+          "Establish user rights portal"
+        ],
+        "notes": "California requires explicit consent and comprehensive user rights for personal data processing."
+      },
+      "CO": {
+        "state_name": "Colorado",
+        "risk_score": 0.8,
+        "risk_level": "high",
+        "reasoning": "Colorado's CPA mandates consent management, data deletion rights, and data protection assessments, which are currently lacking for several features.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "CPA"
+        ],
+        "required_actions": [
+          "Implement consent management",
+          "Add data deletion rights",
+          "Conduct data protection assessments"
+        ],
+        "notes": "Colorado's CPA has strong data protection requirements."
+      },
+      "CT": {
+        "state_name": "Connecticut",
+        "risk_score": 0.8,
+        "risk_level": "high",
+        "reasoning": "Connecticut's CTDPA requires consent management, data deletion, and data portability, which are not fully implemented across several features.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "CTDPA"
+        ],
+        "required_actions": [
+          "Implement consent management",
+          "Add data deletion rights",
+          "Provide data portability"
+        ],
+        "notes": "Connecticut's CTDPA has strong data protection requirements."
+      },
+      "FL": {
+        "state_name": "Florida",
+        "risk_score": 0.6,
+        "risk_level": "medium",
+        "reasoning": "Florida's FDBR, while not fully implemented, requires specific actions regarding privacy contacts, policies, and potential consent mechanisms related to digital rights.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "FDBR"
+        ],
+        "required_actions": [
+          "Implement a designated privacy contact",
+          "Update privacy policy with relevant information handling details",
+          "Implement consent management as required"
+        ],
+        "notes": "Florida's digital bill of rights may apply depending on data collected."
+      },
+      "IL": {
+        "state_name": "Illinois",
+        "risk_score": 0.9,
+        "risk_level": "high",
+        "reasoning": "Illinois' BIPA poses a high risk due to stringent requirements for biometric data, even if not explicitly collected by all features. Compliance gaps exist.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "BIPA"
+        ],
+        "required_actions": [
+          "Implement BIPA compliant consent procedures for biometric data (if applicable)",
+          "Establish a written biometric information policy"
+        ],
+        "notes": "Illinois BIPA has strict requirements for biometric data handling."
+      },
+      "NY": {
+        "state_name": "New York",
+        "risk_score": 0.7,
+        "risk_level": "high",
+        "reasoning": "NY SHIELD Act and potential biometric privacy concerns require specific security measures and policy updates. Some features lack these provisions.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "NY SHIELD Act",
+          "NY Biometric Privacy Act"
+        ],
+        "required_actions": [
+          "Implement reasonable data security safeguards",
+          "Update privacy policy regarding data handling and retention",
+          "Address potential biometric data concerns"
+        ],
+        "notes": "NY SHIELD Act has broad security requirements. Biometric data is a growing area of concern."
+      },
+      "TX": {
+        "state_name": "Texas",
+        "risk_score": 0.6,
+        "risk_level": "medium",
+        "reasoning": "Texas' TDPSA mandates consent for sensitive data, opt-out for data sales, and data minimization, which are not comprehensively addressed by all features.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "TDPSA"
+        ],
+        "required_actions": [
+          "Implement consent mechanism for sensitive data",
+          "Provide opt-out for sale of personal data",
+          "Implement data minimization practices"
+        ],
+        "notes": "Texas law focuses on consent and data sales."
+      },
+      "UT": {
+        "state_name": "Utah",
+        "risk_score": 0.6,
+        "risk_level": "medium",
+        "reasoning": "Utah's UCPA requires data processing agreements, deletion rights, and potentially consent mechanisms for certain data practices, which are not consistently implemented.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "UCPA"
+        ],
+        "required_actions": [
+          "Implement data processing agreements for vendors",
+          "Add data deletion rights",
+          "Implement appropriate consent mechanisms"
+        ],
+        "notes": ""
+      },
+      "VA": {
+        "state_name": "Virginia",
+        "risk_score": 0.8,
+        "risk_level": "high",
+        "reasoning": "Virginia's VCDPA requires consent management, data deletion, and data protection assessments, posing high compliance risks due to gaps in implementation across features.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "VCDPA"
+        ],
+        "required_actions": [
+          "Implement consent management for sensitive data",
+          "Add data deletion rights",
+          "Conduct data protection assessments"
+        ],
+        "notes": ""
+      },
+      "WA": {
+        "state_name": "Washington",
+        "risk_score": 0.8,
+        "risk_level": "high",
+        "reasoning": "Washington's My Health My Data Act and CPA mandate strict requirements for health data and general data privacy, creating significant compliance challenges.",
+        "non_compliant_features": [
+          "Video Reply Functionality",
+          "Exposure Control (GH)",
+          "Feedback Collection (BB)",
+          "EEA Region Restriction"
+        ],
+        "non_compliant_regulations": [
+          "My Health My Data Act",
+          "CPA"
+        ],
+        "required_actions": [
+          "Implement requirements for health data handling",
+          "Ensure appropriate consent mechanisms",
+          "Conduct data protection assessments"
+        ],
+        "notes": "Washington state has specific laws related to health data."
+      }
+    }
+  }
+}
