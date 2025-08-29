@@ -32,7 +32,8 @@ from agents import (
     ExtractedFeature,
     FeatureComplianceResult,
     PRDAnalysisResult,
-    USStateCompliance
+    USStateCompliance,
+    StateComplianceScore
 )
 
 @dataclass
@@ -246,6 +247,7 @@ class ComplianceWorkflow:
             
             # Convert US state compliance data to USStateCompliance objects
             us_state_compliance_list = []
+            state_compliance_scores_dict = {}
             state_compliance_data = us_state_analysis.get("state_compliance", [])
             for state_data in state_compliance_data:
                 state_compliance = USStateCompliance(
@@ -258,6 +260,42 @@ class ComplianceWorkflow:
                     notes=state_data.get("notes", "")
                 )
                 us_state_compliance_list.append(state_compliance)
+                
+                # Create StateComplianceScore object for the new dictionary
+                # Convert risk level to compliance score (1.0 = fully compliant, 0.0 = non-compliant)
+                risk_level = state_data.get("risk_level", "Low").lower()
+                if state_data.get("is_compliant", True):
+                    compliance_score = 1.0
+                else:
+                    # Map risk levels to compliance scores
+                    risk_to_score = {
+                        "critical": 0.0,
+                        "high": 0.2,
+                        "medium": 0.5,
+                        "low": 0.8
+                    }
+                    compliance_score = risk_to_score.get(risk_level, 0.5)
+                
+                # Get reasoning from state data, or generate fallback reasoning
+                reasoning = state_data.get("reasoning", "")
+                if not reasoning:
+                    if state_data.get("is_compliant", True):
+                        reasoning = f"Feature complies with {state_data.get('state_name', '')}'s data protection requirements."
+                    else:
+                        regulations = state_data.get("non_compliant_regulations", [])
+                        reasoning = f"Feature is non-compliant with {state_data.get('state_name', '')}'s regulations: {', '.join(regulations)}."
+                
+                state_compliance_score = StateComplianceScore(
+                    state_code=state_data.get("state_code", ""),
+                    state_name=state_data.get("state_name", ""),
+                    compliance_score=compliance_score,
+                    risk_level=state_data.get("risk_level", "Low"),
+                    reasoning=reasoning,
+                    non_compliant_regulations=state_data.get("non_compliant_regulations", []),
+                    required_actions=state_data.get("required_actions", []),
+                    notes=state_data.get("notes", "")
+                )
+                state_compliance_scores_dict[state_data.get("state_code", "")] = state_compliance_score
             
         except Exception as e:
             print(f"⚠️  Error in feature analysis: {e}")
@@ -272,6 +310,7 @@ class ComplianceWorkflow:
             
             # Create fallback US state compliance data
             us_state_compliance_list = []
+            state_compliance_scores_dict = {}
             fallback_states = [
                 {"state_code": "CA", "state_name": "California", "is_compliant": False},
                 {"state_code": "VA", "state_name": "Virginia", "is_compliant": False}
@@ -287,6 +326,19 @@ class ComplianceWorkflow:
                     notes="Fallback compliance data due to analysis error"
                 )
                 us_state_compliance_list.append(state_compliance)
+                
+                # Create fallback StateComplianceScore
+                state_compliance_score = StateComplianceScore(
+                    state_code=state_data["state_code"],
+                    state_name=state_data["state_name"],
+                    compliance_score=0.2,  # High risk = low compliance score
+                    risk_level="High",
+                    reasoning=f"Feature is non-compliant with {state_data['state_name']}'s regulations (CCPA, VCDPA) due to data processing practices. Fallback analysis due to system error.",
+                    non_compliant_regulations=["CCPA", "VCDPA"],
+                    required_actions=["Implement consent mechanisms", "Add data deletion rights"],
+                    notes="Fallback compliance data due to analysis error"
+                )
+                state_compliance_scores_dict[state_data["state_code"]] = state_compliance_score
         
         processing_time = (datetime.now() - start_time).total_seconds()
         
@@ -301,6 +353,7 @@ class ComplianceWorkflow:
             recommendations=recommendations,
             us_state_compliance=us_state_compliance_list,
             non_compliant_states=non_compliant_states,
+            state_compliance_scores=state_compliance_scores_dict,
             processing_time=processing_time,
             timestamp=datetime.now().isoformat()
         )
@@ -417,6 +470,10 @@ class ComplianceWorkflow:
                         "reasoning": result.reasoning,
                         "recommendations": result.recommendations,
                         "non_compliant_states": result.non_compliant_states,
+                        "state_compliance_scores": {
+                            state_code: asdict(score_data) 
+                            for state_code, score_data in result.state_compliance_scores.items()
+                        },
                         "processing_time": result.processing_time,
                         "timestamp": result.timestamp
                     }
@@ -558,6 +615,14 @@ def main():
         print(f"     Non-compliant states: {len(result.non_compliant_states)}")
         if result.non_compliant_states:
             print(f"     States: {', '.join(result.non_compliant_states)}")
+        
+        # Display state compliance scores for this feature
+        if result.state_compliance_scores:
+            print(f"     State Compliance Scores:")
+            for state_code, score_data in result.state_compliance_scores.items():
+                print(f"       {state_code}: {score_data.compliance_score:.2f} ({score_data.risk_level})")
+                if score_data.compliance_score < 0.8:  # Show reasoning for non-compliant states
+                    print(f"         Reasoning: {score_data.reasoning[:80]}...")
         print()
     
     # Display non-compliant states dictionary

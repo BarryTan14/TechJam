@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional
@@ -22,40 +22,50 @@ logger = logging.getLogger(__name__)
 # MongoDB connection from environment variables
 uri = os.getenv("MONGODB_URI")
 if not uri:
-    raise ValueError("MONGODB_URI environment variable is not set")
+    print("⚠️  MONGODB_URI environment variable is not set - running in offline mode")
+    uri = None
 
 # Database name from environment variables
 database_name = os.getenv("DATABASE_NAME", "TechJam")
 
 # Create a new client and connect to the server
-try:
-    client = MongoClient(uri, server_api=ServerApi('1'))
-    # Send a ping to confirm a successful connection
-    client.admin.command('ping')
-    print("✅ Successfully connected to MongoDB!")
-    db = client[database_name]
-    print(f"✅ Connected to database: {db.name}")
-    
-    # Initialize collections
-    prd_collection = db["PRD"]
-    feature_data_collection = db["feature_data"]
-    logs_collection = db["logs"]
-    
-    # Create indexes for better performance
-    prd_collection.create_index("ID", unique=True)
-    feature_data_collection.create_index("uuid", unique=True)
-    feature_data_collection.create_index("prd_uuid")
-    logs_collection.create_index("prd_uuid")
-    
-    MONGODB_CONNECTED = True
-    print("✅ MongoDB collections initialized successfully!")
-    
-except Exception as e:
-    print(f"❌ MongoDB connection failed: {e}")
+if uri:
+    try:
+        client = MongoClient(uri, server_api=ServerApi('1'))
+        # Send a ping to confirm a successful connection
+        client.admin.command('ping')
+        print("✅ Successfully connected to MongoDB!")
+        db = client[database_name]
+        print(f"✅ Connected to database: {db.name}")
+        
+        # Initialize collections
+        prd_collection = db["PRD"]
+        feature_data_collection = db["feature_data"]
+        logs_collection = db["logs"]
+        
+        # Create indexes for better performance
+        prd_collection.create_index("ID", unique=True)
+        feature_data_collection.create_index("uuid", unique=True)
+        feature_data_collection.create_index("prd_uuid")
+        logs_collection.create_index("prd_uuid")
+        
+        MONGODB_CONNECTED = True
+        print("✅ MongoDB collections initialized successfully!")
+        
+    except Exception as e:
+        print(f"❌ MongoDB connection failed: {e}")
+        print("⚠️  Running in offline mode - API will work but data won't be persisted")
+        print("💡 Check your internet connection and MongoDB Atlas settings")
+        
+        # Set up offline mode
+        MONGODB_CONNECTED = False
+        client = None
+        db = None
+        prd_collection = None
+        feature_data_collection = None
+        logs_collection = None
+else:
     print("⚠️  Running in offline mode - API will work but data won't be persisted")
-    print("💡 Check your internet connection and MongoDB Atlas settings")
-    
-    # Set up offline mode
     MONGODB_CONNECTED = False
     client = None
     db = None
@@ -218,9 +228,6 @@ def migrate_existing_data():
         print(f"⚠️  Data migration failed: {e}")
         # Continue without migration
 
-# Run data migration for existing data
-migrate_existing_data()
-
 # Pydantic models
 class PRDBase(BaseModel):
     Name: str = Field(..., description="PRD Name")
@@ -269,6 +276,9 @@ class LogResponse(LogBase):
     uuid: str
     timestamp: Optional[datetime] = None
 
+# Create API router
+api_router = APIRouter(prefix="/api")
+
 # FastAPI app
 app = FastAPI(
     title="TechJam Backend API",
@@ -311,8 +321,11 @@ def ensure_timestamps(data: dict) -> dict:
     
     return data
 
+# Run data migration for existing data
+migrate_existing_data()
+
 # PRD CRUD Operations
-@app.post("/prd", response_model=PRDResponse, status_code=status.HTTP_201_CREATED)
+@api_router.post("/prd", response_model=PRDResponse, status_code=status.HTTP_201_CREATED)
 async def create_prd(prd: PRDCreate):
     """Create a new PRD"""
     try:
@@ -349,7 +362,7 @@ async def create_prd(prd: PRDCreate):
         logger.error(f"Error creating PRD: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create PRD: {str(e)}")
 
-@app.get("/prd", response_model=List[PRDResponse])
+@api_router.get("/prd", response_model=List[PRDResponse])
 async def get_all_prds():
     """Get all PRDs"""
     try:
@@ -363,7 +376,7 @@ async def get_all_prds():
         logger.error(f"Error retrieving PRDs: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve PRDs: {str(e)}")
 
-@app.get("/prd/{prd_id}", response_model=PRDResponse)
+@api_router.get("/prd/{prd_id}", response_model=PRDResponse)
 async def get_prd(prd_id: str):
     """Get a specific PRD by ID"""
     try:
@@ -382,7 +395,7 @@ async def get_prd(prd_id: str):
         logger.error(f"Error retrieving PRD {prd_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve PRD: {str(e)}")
 
-@app.put("/prd/{prd_id}", response_model=PRDResponse)
+@api_router.put("/prd/{prd_id}", response_model=PRDResponse)
 async def update_prd(prd_id: str, prd_update: PRDUpdate):
     """Update a PRD"""
     try:
@@ -433,7 +446,7 @@ async def update_prd(prd_id: str, prd_update: PRDUpdate):
         logger.error(f"Error updating PRD {prd_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update PRD: {str(e)}")
 
-@app.delete("/prd/{prd_id}", status_code=status.HTTP_204_NO_CONTENT)
+@api_router.delete("/prd/{prd_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_prd(prd_id: str):
     """Delete a PRD"""
     try:
@@ -468,7 +481,7 @@ async def delete_prd(prd_id: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete PRD: {str(e)}")
 
 # Feature Data CRUD Operations
-@app.post("/feature-data", response_model=FeatureDataResponse, status_code=status.HTTP_201_CREATED)
+@api_router.post("/feature-data", response_model=FeatureDataResponse, status_code=status.HTTP_201_CREATED)
 async def create_feature_data(feature_data: FeatureDataCreate):
     """Create new feature data"""
     try:
@@ -510,7 +523,7 @@ async def create_feature_data(feature_data: FeatureDataCreate):
         logger.error(f"Error creating feature data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create feature data: {str(e)}")
 
-@app.get("/feature-data", response_model=List[FeatureDataResponse])
+@api_router.get("/feature-data", response_model=List[FeatureDataResponse])
 async def get_all_feature_data():
     """Get all feature data"""
     try:
@@ -524,7 +537,7 @@ async def get_all_feature_data():
         logger.error(f"Error retrieving feature data: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve feature data: {str(e)}")
 
-@app.get("/feature-data/{uuid}", response_model=FeatureDataResponse)
+@api_router.get("/feature-data/{uuid}", response_model=FeatureDataResponse)
 async def get_feature_data(uuid: str):
     """Get specific feature data by UUID"""
     try:
@@ -543,7 +556,7 @@ async def get_feature_data(uuid: str):
         logger.error(f"Error retrieving feature data {uuid}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve feature data: {str(e)}")
 
-@app.get("/feature-data/prd/{prd_uuid}", response_model=List[FeatureDataResponse])
+@api_router.get("/feature-data/prd/{prd_uuid}", response_model=List[FeatureDataResponse])
 async def get_feature_data_by_prd(prd_uuid: str):
     """Get all feature data for a specific PRD"""
     try:
@@ -564,7 +577,7 @@ async def get_feature_data_by_prd(prd_uuid: str):
         logger.error(f"Error retrieving feature data for PRD {prd_uuid}: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve feature data: {str(e)}")
 
-@app.put("/feature-data/{uuid}", response_model=FeatureDataResponse)
+@api_router.put("/feature-data/{uuid}", response_model=FeatureDataResponse)
 async def update_feature_data(uuid: str, feature_data_update: FeatureDataUpdate):
     """Update feature data"""
     try:
@@ -618,7 +631,7 @@ async def update_feature_data(uuid: str, feature_data_update: FeatureDataUpdate)
         logger.error(f"Error updating feature data {uuid}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to update feature data: {str(e)}")
 
-@app.delete("/feature-data/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_router.delete("/feature-data/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_feature_data(uuid: str):
     """Delete feature data"""
     try:
@@ -650,7 +663,7 @@ async def delete_feature_data(uuid: str):
         raise HTTPException(status_code=500, detail=f"Failed to delete feature data: {str(e)}")
 
 # Logs CRUD Operations
-@app.post("/logs", response_model=LogResponse, status_code=status.HTTP_201_CREATED)
+@api_router.post("/logs", response_model=LogResponse, status_code=status.HTTP_201_CREATED)
 async def create_log(log: LogCreate):
     """Create a new log entry"""
     try:
@@ -682,7 +695,7 @@ async def create_log(log: LogCreate):
         logger.error(f"Error creating log: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create log: {str(e)}")
 
-@app.get("/logs", response_model=List[LogResponse])
+@api_router.get("/logs", response_model=List[LogResponse])
 async def get_all_logs():
     """Get all logs"""
     try:
@@ -696,7 +709,7 @@ async def get_all_logs():
         logger.error(f"Error retrieving logs: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve logs: {str(e)}")
 
-@app.get("/logs/{uuid}", response_model=LogResponse)
+@api_router.get("/logs/{uuid}", response_model=LogResponse)
 async def get_log(uuid: str):
     """Get a specific log by UUID"""
     try:
@@ -715,7 +728,7 @@ async def get_log(uuid: str):
         logger.error(f"Error retrieving log {uuid}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve log: {str(e)}")
 
-@app.get("/logs/prd/{prd_uuid}", response_model=List[LogResponse])
+@api_router.get("/logs/prd/{prd_uuid}", response_model=List[LogResponse])
 async def get_logs_by_prd(prd_uuid: str):
     """Get all logs for a specific PRD"""
     try:
@@ -736,7 +749,7 @@ async def get_logs_by_prd(prd_uuid: str):
         logger.error(f"Error retrieving logs for PRD {prd_uuid}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve logs: {str(e)}")
 
-@app.delete("/logs/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
+@api_router.delete("/logs/{uuid}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_log(uuid: str):
     """Delete a log entry"""
     try:
@@ -828,5 +841,8 @@ if __name__ == "__main__":
     print("🔍 Health Check: http://localhost:{port}/health")
     print("🌐 API Base URL: http://localhost:{port}")
     print("⏹️  Press Ctrl+C to stop")
+    
+    # Include API router after all endpoints are defined
+    app.include_router(api_router)
     
     uvicorn.run(app, host=host, port=port)

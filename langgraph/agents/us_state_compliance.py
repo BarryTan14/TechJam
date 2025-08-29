@@ -156,6 +156,7 @@ For each US state, determine:
 2. Which specific regulations are violated (if any)?
 3. What actions are required to achieve compliance?
 4. Risk level for that state (Low/Medium/High/Critical)
+5. Detailed reasoning for the compliance assessment
 
 Consider these key factors:
 - Data types being processed (personal, biometric, financial, health, etc.)
@@ -177,6 +178,7 @@ Return your response as a JSON object with this EXACT structure:
             "non_compliant_regulations": ["CCPA", "CPRA"],
             "risk_level": "High",
             "required_actions": ["Implement consent management", "Add data deletion rights"],
+            "reasoning": "Feature collects personal data without proper consent mechanisms required by CCPA/CPRA. California has the strictest privacy laws in the US requiring explicit consent and comprehensive user rights.",
             "notes": "California has strict privacy laws requiring explicit consent and user rights"
         }},
         {{
@@ -186,6 +188,7 @@ Return your response as a JSON object with this EXACT structure:
             "non_compliant_regulations": [],
             "risk_level": "Low",
             "required_actions": [],
+            "reasoning": "Feature complies with Virginia's VCDPA requirements. Data processing practices align with state regulations and user rights are properly implemented.",
             "notes": "Feature complies with Virginia's data protection requirements"
         }}
     ],
@@ -207,7 +210,7 @@ Key states to focus on with comprehensive privacy laws:
 - Illinois (BIPA)
 - Washington (My Health My Data Act)
 
-Ensure your response is valid JSON and includes all 50 states in the state_compliance array.
+Ensure your response is valid JSON and includes all 50 states in the state_compliance array with detailed reasoning for each state.
 """
 
         print(f"🤖 Using LLM for US state compliance analysis...")
@@ -295,6 +298,12 @@ Ensure your response is valid JSON and includes all 50 states in the state_compl
                 if risk_level_state in ["High", "Critical"]:
                     high_risk_states.append(state_code)
             
+            # Generate reasoning based on compliance status
+            if is_compliant:
+                reasoning = f"Feature complies with {state_name}'s data protection requirements. Data processing practices align with state regulations."
+            else:
+                reasoning = f"Feature is non-compliant with {state_name}'s regulations due to {', '.join(non_compliant_regulations)}. {notes}"
+            
             # Create state compliance object
             state_compliance.append({
                 "state_code": state_code,
@@ -303,6 +312,7 @@ Ensure your response is valid JSON and includes all 50 states in the state_compl
                 "non_compliant_regulations": non_compliant_regulations,
                 "risk_level": risk_level_state,
                 "required_actions": required_actions,
+                "reasoning": reasoning,
                 "notes": notes
             })
         

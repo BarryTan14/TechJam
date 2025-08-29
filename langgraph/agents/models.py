@@ -48,6 +48,19 @@ class USStateCompliance:
 
 
 @dataclass
+class StateComplianceScore:
+    """Represents compliance score and reasoning for a specific state"""
+    state_code: str
+    state_name: str
+    compliance_score: float  # 0.0-1.0 where 1.0 is fully compliant
+    risk_level: str  # low/medium/high/critical
+    reasoning: str
+    non_compliant_regulations: List[str]
+    required_actions: List[str]
+    notes: str
+
+
+@dataclass
 class FeatureComplianceResult:
     """Complete compliance result for a single feature"""
     feature: ExtractedFeature
@@ -60,6 +73,8 @@ class FeatureComplianceResult:
     recommendations: List[str]
     us_state_compliance: List[USStateCompliance]
     non_compliant_states: List[str]
+    # New field: Dictionary mapping state codes to compliance scores and reasoning
+    state_compliance_scores: Dict[str, StateComplianceScore]
     processing_time: float
     timestamp: str
 
