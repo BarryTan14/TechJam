@@ -27,6 +27,9 @@ export default function Dashboard() {
     const [featureOptions, setFeatureOptions] = useState<any[]>([]);
     const [allFeatues, setAllFeatures] = useState<any[]>([])
     const [mapData, setMapData] = useState<any[]>([])
+    const [openStateModal, setOpenStateModal] = useState(false)
+    const [stateModalData, setStateModalData] = useState(null)
+
 
     const showModal = (value: SetStateAction<string>) => {
         setOpenModal(true);
@@ -37,6 +40,15 @@ export default function Dashboard() {
         setOpenModal(false);
         setButtonValue("")
     };
+
+    const showStateModal = (feature: any) => {
+        setOpenStateModal(true)
+        setStateModalData(feature)
+    }
+
+    const closeStateModal = () => {
+        setOpenStateModal(false)
+    }
 
     const navigate = useNavigate();
 
@@ -147,20 +159,20 @@ export default function Dashboard() {
             <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
             <Button onClick={() => signOut()}>Sign Out</Button>
         </div>
-    </div>
+      </div>
 
       <Row style={{marginBottom:"10px"}}>
-            <Card style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} title={<>PRD - {dashboardData.prd?.Name}</>}>
-            <Row style={{fontWeight:500}} justify="space-evenly">
-                <Col span={20}>
-                    <p><strong>Description:</strong> {dashboardData.prd?.Description || 'N/A'}</p>
-                </Col>
-                <Col span={4} style={{marginTop: 6, justifyItems:"end"}}>
-                    <Button style={{ marginRight: 2 }} onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
-                    <Button>Upload</Button>
-                </Col>
-            </Row>
-          </Card>
+        <Card title={dashboardData.prd?.Name && <span>PRD - {dashboardData.prd?.Name}</span>} style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} >
+        <Row style={{fontWeight:500}} justify="space-evenly">
+            <Col span={20}>
+                <p><strong>Description:</strong> {dashboardData.prd?.Description || 'N/A'}</p>
+            </Col>
+            <Col span={4} style={{marginTop: 6, justifyItems:"end"}}>
+                <Button style={{ marginRight: 2 }} onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
+                <Button>Upload</Button>
+            </Col>
+        </Row>
+        </Card>
       </Row>
 
       <Row justify="space-evenly" style={{ display: 'flex', alignItems: 'stretch' }}>
@@ -172,7 +184,7 @@ export default function Dashboard() {
             style={{ marginBottom: "10px", flex: 1}}
           >
             {/* Make the parent positioned so the legend anchors to it */}
-            <div style={{ height: 365, position: 'relative' }}>
+            <div style={{ height: 365, position: 'relative', cursor: "pointer" }}>
               <ResponsiveChoropleth
                 data={mapData}
                 features={countries.features}
@@ -209,6 +221,7 @@ export default function Dashboard() {
                     </div>
                     );
                 }}
+                onClick={(feature) => {showStateModal(feature)}}
               />
 
               {/* Legend pinned to the map container (not the page) */}
@@ -313,6 +326,12 @@ export default function Dashboard() {
           </Card>
         </Col>
       </Row>
+      <Modal
+        open={openStateModal}
+        onCancel={() => {closeStateModal()}}
+      >
+        {stateModalData?.label}
+      </Modal>
     </div>
   );
 }
