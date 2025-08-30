@@ -49,8 +49,11 @@ class WorkflowState:
     prd_parser_output: Optional[AgentOutput] = None
     extracted_features: List[ExtractedFeature] = None
     
-    # Feature analysis results
+    # Feature analysis results (for backward compatibility)
     feature_compliance_results: List[FeatureComplianceResult] = None
+    
+    # State-centric analysis results (new)
+    state_analysis_results: Dict[str, Dict[str, Any]] = None
     
     # Final results
     overall_risk_level: str = "unknown"
@@ -390,7 +393,7 @@ class ComplianceWorkflow:
         self._generate_overall_results(state)
         
         # Save results
-        self.save_workflow_results(state)
+        self.save_workflow_results(state, state.state_analysis_results)
         
         return state
     
@@ -440,7 +443,7 @@ class ComplianceWorkflow:
     
 
     
-    def save_workflow_results(self, state: WorkflowState):
+    def save_workflow_results(self, state: WorkflowState, state_analysis_results: Dict[str, Dict[str, Any]]):
         """Save workflow results to output.json"""
         try:
             # Convert state to dictionary
@@ -479,6 +482,7 @@ class ComplianceWorkflow:
                     }
                     for result in state.feature_compliance_results
                 ],
+                "state_analysis_results": state_analysis_results,
                 "overall_results": {
                     "total_features": len(state.extracted_features),
                     "overall_risk_level": state.overall_risk_level,

@@ -35,6 +35,7 @@ class WorkflowResponse(BaseModel):
     summary_recommendations: list
     non_compliant_states: Dict[str, Any]
     feature_compliance_results: list
+    state_analysis_results: Dict[str, Dict[str, Any]]  # New state-centric results
     processing_time: float
     status: str = "completed"
 
@@ -149,6 +150,7 @@ async def analyze_prd(request: PRDRequest):
             summary_recommendations=final_state.summary_recommendations,
             non_compliant_states=final_state.non_compliant_states_dict or {},
             feature_compliance_results=final_state.feature_compliance_results or [],
+            state_analysis_results=final_state.state_analysis_results or {},
             processing_time=final_state.total_processing_time
         )
         
