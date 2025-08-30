@@ -1,11 +1,17 @@
 """
-Risk Assessor Agent - Scores compliance risk and flags issues
+Risk Assessor Agent - Assesses compliance risks for features
 """
 
 import json
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, List
 from .models import AgentOutput
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 
 class RiskAssessorAgent:
@@ -16,7 +22,7 @@ class RiskAssessorAgent:
     
     def assess_risk(self, feature_name: str, feature_analysis: Dict[str, Any], regulation_matching: Dict[str, Any]) -> AgentOutput:
         """Assess compliance risks based on feature analysis and regulation matching"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         
         # Optimized prompt - more concise and focused
         prompt = f"""Assess compliance risks:
@@ -71,7 +77,7 @@ Return JSON:
             thought_process = "Used fallback assessment (no LLM available)"
         
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         # Create agent output
         agent_output = AgentOutput(
@@ -84,7 +90,7 @@ Return JSON:
             analysis_result=analysis_result,
             confidence_score=analysis_result.get("confidence_score", 0.7),
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
         
         return agent_output

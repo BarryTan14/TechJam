@@ -1,11 +1,17 @@
 """
-Quality Assurance Agent - Validates and checks consistency of outputs
+Quality Assurance Agent - Ensures quality and consistency of analysis
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List
 from .models import AgentOutput
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 
 class QualityAssuranceAgent:
@@ -16,7 +22,7 @@ class QualityAssuranceAgent:
     
     def validate_results(self, feature_name: str, all_outputs: List[AgentOutput]) -> AgentOutput:
         """Validate and check consistency of all agent outputs"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         
         # Create optimized prompt for quality assurance
         prompt = f"""
@@ -58,7 +64,7 @@ Return JSON with:
             thought_process = "Used LLM with JSON extraction"
         
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         # Create agent output
         agent_output = AgentOutput(
@@ -71,7 +77,7 @@ Return JSON with:
             analysis_result=analysis_result,
             confidence_score=0.85,
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
         
         return agent_output
