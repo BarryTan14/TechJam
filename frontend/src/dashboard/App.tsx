@@ -2,25 +2,10 @@ import { Card, Row, Col, Button, Select, Modal, Spin, message } from 'antd';
 import { ResponsiveChoropleth } from '@nivo/geo'
 import countries from '../usa_states.json'
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { SetStateAction, useState, useEffect } from 'react';
+import { SetStateAction, useState, useEffect, Key } from 'react';
 import { fetchDashboardData } from '../api';
-import { CheckCircleOutlined, WarningOutlined, HourglassOutlined } from '@ant-design/icons'
-
-const sampleHeatMapData = 
-    [
-        {
-            "id": "AK",
-            "value": 0.5,
-        },
-        {
-            "id": "NY",
-            "value": 1,
-        },
-        {
-            "id": "CA",
-            "value": 0,
-        },
-    ]
+import { CheckCircleOutlined, WarningOutlined } from '@ant-design/icons'
+import { scaleQuantize, scaleThreshold } from 'd3-scale';
 
 const signOut = () => {
   localStorage.removeItem("username")
@@ -35,13 +20,14 @@ export default function Dashboard() {
 
     const [searchParams] = useSearchParams();
     const prdId = searchParams.get('prdId');
-    
     const [openModal, setOpenModal] = useState(false);
     const [buttonValue, setButtonValue] = useState("");
     const [loading, setLoading] = useState(true);
     const [dashboardData, setDashboardData] = useState<any>(null);
     const [selectedFeature, setSelectedFeature] = useState<any>(null);
     const [featureOptions, setFeatureOptions] = useState<any[]>([]);
+    const [allFeatues, setAllFeatures] = useState<any[]>([])
+    const [mapData, setMapData] = useState<any[]>([])
 
     const showModal = (value: SetStateAction<string>) => {
         setOpenModal(true);
@@ -70,19 +56,6 @@ export default function Dashboard() {
                 const data = response.data;
                 console.log(data)
                 setDashboardData(data);
-                
-                // Prepare feature options for the select dropdown
-                const options = data.features.map((feature: any) => ({
-                    value: feature.uuid,
-                    label: feature.data.feature_name || 'Unknown Feature'
-                }));
-                setFeatureOptions(options);
-                
-                // Set first feature as selected by default
-                if (data.features.length > 0) {
-                    setSelectedFeature(data.features[0]);
-                }
-                
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -91,9 +64,34 @@ export default function Dashboard() {
             }
         };
 
-        console.log(dashboardData)
         fetchData();
     }, [prdId]);
+
+    useEffect(() => {
+        if (dashboardData?.prd?.langgraph_analysis?.feature_compliance_results) {
+            setAllFeatures(dashboardData.prd.langgraph_analysis.feature_compliance_results)
+            const options = dashboardData.prd.langgraph_analysis.feature_compliance_results.map((item: { feature: { feature_id: any; feature_name: any; priority: any}; }) => ({
+                value: item.feature.feature_id,
+                label: item.feature.feature_name || 'Unknown Feature',
+                priority: item.feature.priority,
+            }));
+            
+            setFeatureOptions(options);
+        }
+    }, [dashboardData])
+
+    useEffect(() => {
+        if (selectedFeature) {
+            console.log(selectedFeature)
+            setMapData([])
+            const stateComplianceScore = selectedFeature.state_compliance_scores
+            const list = Object.values(stateComplianceScore).map((state) => ({
+                id: state.state_code,
+                value: state.compliance_score > 0.4 ? 1 : 0
+            }));
+            setMapData(list)
+        }
+    }, [selectedFeature])
 
     if (loading) {
         return (
@@ -112,6 +110,29 @@ export default function Dashboard() {
             </div>
         );
     }
+
+    const featureOptionsWithCircles = featureOptions.map(option => ({
+        value: option.value,
+        label: (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span
+                style={{
+                display: 'inline-block',
+                width: 12,
+                height: 12,
+                borderRadius: '50%',
+                backgroundColor: 
+                    option.priority === 'High' ? 'red' :
+                    option.priority === 'Medium' ? 'orange' :
+                    option.priority === 'Low' ? 'green' :
+                    'gray', // default color for undefined priority
+                }}
+            />
+            <span>{option.label}</span>
+            </div>
+        ),
+    }));
+
 
   return (
     <div style={{ padding: 20 }}>
@@ -133,52 +154,34 @@ export default function Dashboard() {
             <Card style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} title={<>Feature: <Select
                 style={{ width: "47%" }}
                 onChange={(value) => {
-                    const feature = dashboardData.features.find((f: any) => f.uuid === value);
+                    setSelectedFeature(null)
+                    const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
                     setSelectedFeature(feature);
                 }}
-                options={featureOptions}
+                options={featureOptionsWithCircles}
                 placeholder="Select a feature"
                 /></>}
             >
             <Row style={{fontWeight:500}} justify="space-evenly">
                 <Col span={11}>
-                    
-                    {/* {selectedFeature && (
-                    <div>
-                        <span style={{ display: "block" }}><strong>Name:</strong> {selectedFeature.data.feature_name || 'N/A'}</span>
-                        <span style={{ display: "block" }}><strong>Description:</strong> {selectedFeature.data.feature_description || 'N/A'}</span>
-                        <span style={{ display: "block" }}><strong>Priority:</strong> {selectedFeature.data.priority || 'N/A'}</span>
-                        <span style={{ display: "block" }}><strong>Complexity:</strong> {selectedFeature.data.complexity || 'N/A'}</span>
-                        <span style={{ display: "block" }}><strong>Risk Level:</strong> {selectedFeature.data.risk_level || 'N/A'}</span>
-                        <span style={{ display: "block" }}><strong>Confidence:</strong> {selectedFeature.data.confidence_score ? `${(selectedFeature.data.confidence_score * 100).toFixed(1)}%` : 'N/A'}</span>
-                        <span style={{ display: "block" }}><strong>Latest Update:</strong> {selectedFeature.updated_at ? new Date(selectedFeature.updated_at).toLocaleDateString() : 'N/A'}</span>
-                    </div>
-                    )} */}
                     <b>Description</b>:<br />
-                    <div>Some Thing Some Thing</div>
+                    <div>{selectedFeature?.feature.feature_description ?? ""}</div>
                 </Col>
                 <Col span={11} style={{marginLeft: "auto"}} >
                     <div style={{textAlign:"center", fontSize:"16px"}}>States Compliance</div>
-                    <Row>
-                        <Col span={8} style={{textAlign:"center"}}>
+                    <Row justify={"center"}>
+                        <Col span={10} style={{textAlign:"center"}}>
                             <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '90%', fontSize: "12px" }}>
                                 <CheckCircleOutlined style={{fontSize: "20px"}} /><br />
-                                1<br />
+                                {selectedFeature ? (mapData.filter(state => state.value <= 0.4).length || 0) : ("NA")}<br />
                                 Compliant
                             </Card>
                         </Col>
-                        <Col span={8} style={{textAlign:"center"}}>
+                        <Col span={10} style={{textAlign:"center"}}>
                             <Card style={{ backgroundColor: "#FFCCCC", color: "red", marginRight:"8px", height: '90%', fontSize: "12px" }}>
                                 <WarningOutlined style={{fontSize: "20px"}}/><br />
-                                1<br />
+                                {selectedFeature ? (mapData.filter(state => state.value > 0.4).length || 0) : ("NA")}<br />
                                 Non-compliant
-                            </Card>
-                        </Col>
-                        <Col span={8} style={{textAlign:"center"}}>
-                            <Card style={{ backgroundColor: "#ffe7ba", color: "orange", height: '90%', fontSize: "12px" }}>
-                                <HourglassOutlined style={{fontSize: "20px"}}/><br />
-                                1<br />
-                                Pending Review
                             </Card>
                         </Col>
                     </Row>
@@ -198,13 +201,13 @@ export default function Dashboard() {
             {/* Make the parent positioned so the legend anchors to it */}
             <div style={{ height: 365, position: 'relative' }}>
               <ResponsiveChoropleth
-                data={sampleHeatMapData}
+                data={mapData}
                 features={countries.features}
-                colors={['#008000', '#FFA500', '#FF0000']}
+                colors={['#008000','#FF0000']}
                 domain={[0, 1]}
                 unknownColor="#666666"
                 label="properties.name"
-                valueFormat=".2s"
+                // valueFormat=".2s"
                 borderWidth={0.5}
                 borderColor="#152538"
 
@@ -215,6 +218,24 @@ export default function Dashboard() {
 
                 margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
                 enableGraticule={false}
+                tooltip={({ feature }) => {
+                    if (!feature) return null;
+                    const { properties, data } = feature;
+                    return (
+                    <div
+                        style={{
+                        background: 'white',
+                        padding: '6px 9px',
+                        border: '1px solid #ccc',
+                        borderRadius: 3,
+                        }}
+                    >
+                        <strong>{properties?.name || 'Unknown State'}</strong>
+                        <br />
+                        Score: {data?.value != null ? data.value : 'N/A'}
+                    </div>
+                    );
+                }}
               />
 
               {/* Legend pinned to the map container (not the page) */}
@@ -233,10 +254,10 @@ export default function Dashboard() {
                   <div style={{ width: 15, height: 15, background: '#FF0000', marginRight: 8 }}></div>
                   <span>High</span>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
-                  <div style={{ width: 15, height: 15, background: '#FFA500', marginRight: 8 }}></div>
+                {/* <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                  <div style={{ width: 15, height: 15, background: '#ffa600ff', marginRight: 8 }}></div>
                   <span>Medium</span>
-                </div>
+                </div> */}
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <div style={{ width: 15, height: 15, background: '#008000', marginRight: 8 }}></div>
                   <span>Low</span>
@@ -247,16 +268,16 @@ export default function Dashboard() {
                 <span><b>Analysis</b></span><br></br>
                 {selectedFeature ? (
                 <div>
-                    <p><strong>Risk Level:</strong> {selectedFeature.data.risk_level?.toUpperCase() || 'N/A'}</p>
-                    <p><strong>Confidence Score:</strong> {selectedFeature.data.confidence_score ? `${(selectedFeature.data.confidence_score * 100).toFixed(1)}%` : 'N/A'}</p>
+                    <p><strong>Risk Level:</strong> {selectedFeature.risk_level?.toUpperCase() || 'N/A'}</p>
+                    <p><strong>Confidence Score:</strong> {selectedFeature.confidence_score ? `${(selectedFeature.confidence_score * 100).toFixed(1)}%` : 'N/A'}</p>
                     <p><strong>Compliance Flags:</strong></p>
                     <ul>
-                    {selectedFeature.data.compliance_flags?.map((flag: string, index: number) => (
+                    {selectedFeature.compliance_flags?.map((flag: string, index: number) => (
                         <li key={index}>{flag}</li>
                     )) || <li>None</li>}
                     </ul>
-                    <p><strong>Non-Compliant States:</strong> {selectedFeature.data.non_compliant_states?.length || 0} states</p>
-                    <p><strong>Processing Time:</strong> {selectedFeature.data.processing_time ? `${selectedFeature.data.processing_time.toFixed(2)}s` : 'N/A'}</p>
+                    <p><strong>Non-Compliant States:</strong> {selectedFeature ? (mapData.filter(state => state.value > 0.39).length || 0) : ("NA")} states</p>
+                    <p><strong>Processing Time:</strong> {selectedFeature.processing_time ? `${selectedFeature.processing_time.toFixed(2)}s` : 'N/A'}</p>
                 </div>
                 ) : (
                 <p>Select a feature to view analysis</p>
@@ -270,10 +291,10 @@ export default function Dashboard() {
                 <p><strong>Description:</strong> {dashboardData.prd?.Description || 'N/A'}</p>
                 <p><strong>Status:</strong> {dashboardData.prd?.Status || 'N/A'}</p>
                 <p><strong>Created:</strong> {dashboardData.prd?.created_at ? new Date(dashboardData.prd.created_at).toLocaleDateString() : 'N/A'}</p>
-                <p><strong>Total Features:</strong> {dashboardData.total_features || 0}</p>
-                <p><strong>High Risk:</strong> {dashboardData.features_with_high_risk || 0}</p>
-                <p><strong>Medium Risk:</strong> {dashboardData.features_with_medium_risk || 0}</p>
-                <p><strong>Low Risk:</strong> {dashboardData.features_with_low_risk || 0}</p>
+                <p><strong>Total Features:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.length || 0}</p>
+                <p><strong>High Risk:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.filter((item: { risk_level: string; }) => item.risk_level === "high").length || 0}</p>
+                <p><strong>Medium Risk:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.filter((item: { risk_level: string; }) => item.risk_level === "medium").length || 0}</p>
+                <p><strong>Low Risk:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.filter((item: { risk_level: string; }) => item.risk_level === "low").length || 0}</p>
                 </div>
                 <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
                 <Button style={{ marginRight: "10px" }}>Upload</Button>
@@ -282,12 +303,15 @@ export default function Dashboard() {
             <Card style={{ maxHeight: "40%", overflowY: "scroll" }} title="Recommendation">
             {selectedFeature ? (
               <div>
-                <p><strong>Recommendations:{dashboardData.overall_results?.summary_recommendations || 'N/A'}</strong></p>
-                <ul>
-                  {selectedFeature.data.recommendations?.slice(0, 3).map((rec: string, index: number) => (
-                    <li key={index} style={{ fontSize: '12px', marginBottom: '5px' }}>{rec}</li>
-                  )) || <li>No recommendations available</li>}
-                </ul>
+                {selectedFeature?.recommendations && selectedFeature?.recommendations.length > 0 ? (
+                    <ul>
+                        {selectedFeature?.recommendations.map((rec: string, index: Key | null | undefined) => (
+                        <li key={index}>{rec}</li>
+                        ))}
+                    </ul>
+                ) : (
+                <p>N/A</p>
+                )}
                 <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
                   <Button style={{ marginRight: "10px" }} onClick={() => showModal('approve')}>Approve</Button>
                   <Button onClick={() => showModal('reject')}>Reject</Button>
@@ -303,9 +327,9 @@ export default function Dashboard() {
               open={openModal}
             >
               <p>
-                Feature Name: {selectedFeature?.data.feature_name || 'N/A'} <br />
+                Feature Name: {selectedFeature?.feature_name || 'N/A'} <br />
                 Agent: LangGraph Analysis <br />
-                Reason of {buttonValue === 'approve' ? 'approval' : "rejection"}: {selectedFeature?.data.reasoning || 'N/A'} <br />
+                Reason of {buttonValue === 'approve' ? 'approval' : "rejection"}: {selectedFeature?.reasoning || 'N/A'} <br />
                 Evidence (optional): <Button>Upload</Button>
               </p>
             </Modal>
