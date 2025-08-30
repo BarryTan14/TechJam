@@ -223,7 +223,7 @@ export default function App() {
             </div>
             <div>
               {/* <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button> */}
-              <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
+              {/*<Button onClick={() => navigate('/featureLogs')}>View Logs</Button>*/}
             </div>
             <Row justify="end" style={{marginBottom: "10px"}}>
               <Button title="Add new PRD" onClick={() => showModal()}>Add New PRD</Button>

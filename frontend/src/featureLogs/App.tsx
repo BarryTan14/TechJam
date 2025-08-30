@@ -1,64 +1,250 @@
-import { Button, Table } from "antd";
-import { useNavigate } from "react-router-dom";
-
-const tableCol = [
-    {
-        title: "ID",
-        dataIndex: "id",
-        key: "id",
-    },
-    {
-        title: "Name of Feature",
-        dataIndex: "name",
-        key: "name",
-    },
-    {
-        title: "Description Status",
-        dataIndex: "status",
-        key: "status",
-    },
-]
-
-const sampleData = [
-    {
-        "id": 1,
-        "name": "XXX Name",
-        "status": "Pending"
-    },
-    {
-        "id": 2,
-        "name": "XXX Name",
-        "status": "Review"
-    },
-]
+import { Button, Table, Card, Row, Col, Spin, message, Breadcrumb } from "antd";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { HomeOutlined, DashboardOutlined, FileTextOutlined } from '@ant-design/icons';
+import './featureLogs.css';
 
 const signOut = () => {
   localStorage.removeItem("username")
   window.location.href = "../login" 
 }
 
-export default function Logs() {
+export default function FeatureLogs() {
     if (!localStorage.getItem("username")) {
       window.location.href = "./login"
       return
     }
 
+    const [searchParams] = useSearchParams();
+    const prdId = searchParams.get('prdId');
+    
     const navigate = useNavigate();
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [prdInfo, setPrdInfo] = useState<any>(null);
+
+    // Table columns for logs - conditionally show columns based on context
+    const getTableColumns = () => {
+        const baseColumns = [
+            {
+                title: "UUID",
+                dataIndex: "uuid",
+                key: "uuid",
+                width: 300,
+                render: (text: string) => (
+                    <span style={{ fontSize: '14px', fontFamily: 'monospace' }}>
+                        {text || 'N/A'}
+                    </span>
+                )
+            },
+            {
+                title: "Action",
+                dataIndex: "action",
+                key: "action",
+                width: 150,
+                render: (action: string) => {
+                    let color = 'default';
+                    if (action.includes('CREATE')) color = 'green';
+                    if (action.includes('UPDATE')) color = 'blue';
+                    if (action.includes('DELETE')) color = 'red';
+                    if (action.includes('ERROR')) color = 'red';
+                    if (action.includes('WARNING')) color = 'orange';
+                    
+                    return (
+                        <span style={{ 
+                            color: color === 'default' ? undefined : color,
+                            fontWeight: 'bold',
+                            fontSize: '14px'
+                        }}>
+                            {action}
+                        </span>
+                    );
+                }
+            },
+            {
+                title: "Details",
+                dataIndex: "details",
+                key: "details",
+                ellipsis: true,
+                render: (text: string) => (
+                    <span style={{ fontSize: '14px' }}>
+                        {text || 'N/A'}
+                    </span>
+                )
+            },
+            {
+                title: "Timestamp",
+                dataIndex: "timestamp",
+                key: "timestamp",
+                width: 200,
+                render: (timestamp: string) => {
+                    if (!timestamp) return 'N/A';
+                    return (
+                        <span style={{ fontSize: '14px' }}>
+                            {new Date(timestamp).toLocaleString()}
+                        </span>
+                    );
+                }
+            }
+        ];
+
+        // Only show PRD UUID column when viewing all logs (no prdId)
+        if (!prdId) {
+            baseColumns.splice(1, 0, {
+                title: "PRD UUID",
+                dataIndex: "prd_uuid",
+                key: "prd_uuid",
+                width: 300,
+                render: (text: string) => (
+                    <span style={{ fontSize: '14px', fontFamily: 'monospace' }}>
+                        {text || 'N/A'}
+                    </span>
+                )
+            });
+        }
+
+        return baseColumns;
+    };
+
+    // Fetch logs based on whether prdId is provided
+    useEffect(() => {
+        const fetchLogs = async () => {
+            setLoading(true);
+            try {
+                let url = '/api/logs';
+                if (prdId) {
+                    url = `/api/logs/prd/${prdId}`;
+                }
+                
+                const response = await fetch(url);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                const data = await response.json();
+                setLogs(data);
+                
+                // If we have a prdId, also fetch PRD info for context
+                if (prdId) {
+                    try {
+                        const prdResponse = await fetch(`/api/prd/${prdId}`);
+                        if (prdResponse.ok) {
+                            const prdData = await prdResponse.json();
+                            setPrdInfo(prdData);
+                        }
+                    } catch (error) {
+                        console.warn('Could not fetch PRD info:', error);
+                    }
+                }
+                
+            } catch (error) {
+                console.error('Error fetching logs:', error);
+                message.error('Failed to fetch logs');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchLogs();
+    }, [prdId]);
+
+    // Breadcrumb items
+    const breadcrumbItems = [
+        {
+            title: <HomeOutlined />,
+            href: '/',
+        },
+        ...(prdId ? [
+            {
+                title: <DashboardOutlined />,
+                href: `/dashboard?prdId=${prdId}`,
+            }
+        ] : []),
+        {
+            title: <FileTextOutlined />,
+            href: `/featureLogs${prdId ? `?prdId=${prdId}` : ''}`,
+        }
+    ];
+
+    // Page title based on context
+    const pageTitle = prdId 
+        ? `Logs for PRD: ${prdInfo?.Name || prdId}`
+        : 'All Feature Logs';
 
     return (
         <div style={{ padding: 24 }}>
-            <div style={{display: "flex"}}>
-                <h1 style={{"marginTop": 0}}>LOGS</h1>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", marginBottom: 16 }}>
+                <h1 style={{ marginTop: 0, marginBottom: 0 }}>{pageTitle}</h1>
                 <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
             </div>
-            <div style={{"marginBottom": "10px"}}>
-              <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
+
+            {/* Breadcrumb Navigation */}
+            {/* <Breadcrumb 
+                items={breadcrumbItems}
+                style={{ marginBottom: 16 }}
+            /> */}
+
+            {/* Context Information */}
+            {prdId && prdInfo && (
+                <Card 
+                    style={{ marginBottom: 16, backgroundColor: '#f0f8ff' }}
+                    size="small"
+                >
+                    <Row gutter={16}>
+                        <Col span={8}>
+                            <strong>PRD Name:</strong> {prdInfo.Name}
+                        </Col>
+                        <Col span={8}>
+                            <strong>Status:</strong> {prdInfo.Status}
+                        </Col>
+                        <Col span={8}>
+                            <strong>Total Features:</strong> {prdInfo.total_features || 'N/A'}
+                        </Col>
+                    </Row>
+                </Card>
+            )}
+
+            {/* Navigation Buttons */}
+            <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+                <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
+                {prdId && (
+                    <Button 
+                        type="primary"
+                        onClick={() => navigate(`/dashboard?prdId=${prdId}`)}
+                    >
+                        ← Back to PRD Dashboard
+                    </Button>
+                )}
             </div>
-            <Table 
-                columns={tableCol}
-                dataSource={sampleData}
-                rowKey="id"
-            />
+
+            {/* Logs Table */}
+            <Card title={`Logs (${logs.length} entries)`}>
+                {loading ? (
+                    <div style={{ textAlign: 'center', padding: '40px' }}>
+                        <Spin size="large" />
+                        <p>Loading logs...</p>
+                    </div>
+                ) : (
+                    <Table 
+                        columns={getTableColumns()}
+                        dataSource={logs}
+                        rowKey="uuid"
+                        pagination={{
+                            pageSize: 20,
+                            showSizeChanger: true,
+                            showQuickJumper: true,
+                            showTotal: (total, range) => 
+                                `${range[0]}-${range[1]} of ${total} items`
+                        }}
+                        scroll={{ x: 1200 }}
+                        size="middle"
+                        rowClassName={(record, index) => 
+                            index % 2 === 0 ? 'table-row-light' : 'table-row-dark'
+                        }
+                    />
+                )}
+            </Card>
         </div>
-    )
+    );
 }

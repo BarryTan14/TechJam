@@ -566,7 +566,7 @@ async def create_prd(prd: PRDCreate):
                         "level": "ERROR",
                         "timestamp": current_time
                     }
-                    logs_collection.insert_one(error_log_data)
+                    # logs_collection.insert_one(error_log_data)
                     
                     logger.error(f"❌ LangGraph API error: {response.status_code} - {response.text}")
                     
@@ -580,7 +580,7 @@ async def create_prd(prd: PRDCreate):
                 "level": "WARNING",
                 "timestamp": current_time
             }
-            logs_collection.insert_one(timeout_log_data)
+            # logs_collection.insert_one(timeout_log_data)
             
             logger.warning(f"⏰ LangGraph analysis timed out for PRD: {prd.Name}")
             
@@ -594,7 +594,7 @@ async def create_prd(prd: PRDCreate):
                 "level": "WARNING",
                 "timestamp": current_time
             }
-            logs_collection.insert_one(connection_log_data)
+            # logs_collection.insert_one(connection_log_data)
             
             logger.warning(f"🔌 Cannot connect to LangGraph API for PRD: {prd.Name}")
             
@@ -608,7 +608,7 @@ async def create_prd(prd: PRDCreate):
                 "level": "ERROR",
                 "timestamp": current_time
             }
-            logs_collection.insert_one(error_log_data)
+            # logs_collection.insert_one(error_log_data)
             
             logger.error(f"❌ LangGraph analysis error for PRD {prd.Name}: {e}")
         
@@ -646,7 +646,20 @@ async def get_prd(prd_id: str):
             raise HTTPException(status_code=404, detail="PRD not found")
         
         # Ensure PRD has required timestamp fields
-        ensure_timestamps(prd)
+        # ensure_timestamps(prd)
+
+        # current_time = get_current_timestamp()
+        # log_data = {
+        #     "uuid": generate_uuid(),
+        #     "prd_uuid": prd_id,
+        #     "action": "RETRIEVE",
+        #     "details": f"PRD '{prd['Name']}' retrieved",
+        #     "level": "INFO",
+        #     "timestamp": current_time
+        # }
+        # logger.info(f"Logging retrieval of PRD: {prd_id.Name}")
+        # logs_collection.insert_one(log_data)
+
         
         logger.info(f"Retrieved PRD: {prd_id}")
         return prd
@@ -684,6 +697,18 @@ async def get_prd_dashboard(prd_id: str):
             "features_with_low_risk": len([f for f in features if f.get('data', {}).get('risk_level') == 'low'])
         }
         
+        # Log the dashboard retrieval with PRD name
+        current_time = get_current_timestamp()
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": prd_id,
+            "action": "RETREIVED",
+            "details": f"PRD '{prd['Name']}' dashboard viewed",
+            "level": "INFO",
+            "timestamp": current_time
+        }
+        logs_collection.insert_one(log_data)
+
         logger.info(f"Dashboard data retrieved for PRD: {prd_id} with {len(features)} features")
         return dashboard_data
         
@@ -1103,7 +1128,7 @@ async def create_user(user: UserCreate):
             "level": "INFO",
             "timestamp": current_time
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"User created: {user_id} ({user.username})")
         
@@ -1150,7 +1175,7 @@ async def login_user(user_credentials: UserLogin):
             "level": "INFO",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"User logged in: {user['username']}")
         
@@ -1241,7 +1266,7 @@ async def update_user(user_id: str, user_update: UserUpdate):
             "level": "INFO",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         # Return updated user data
         updated_user = users_collection.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
@@ -1278,7 +1303,7 @@ async def delete_user(user_id: str):
             "level": "WARNING",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"User deactivated: {user_id}")
         
@@ -1537,7 +1562,7 @@ async def update_terminology(term_id: str, terminology: TerminologyUpdate):
             "level": "INFO",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         # Remove ObjectId for JSON serialization
         if "_id" in updated_term:
@@ -1576,7 +1601,7 @@ async def delete_terminology(term_id: str):
             "level": "WARNING",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"Terminology deleted: {existing_term['term']}")
         

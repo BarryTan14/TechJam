@@ -8,7 +8,7 @@ import './index.css'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<App />} />
@@ -17,5 +17,5 @@ ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
         <Route path='/login' element={<Login />}/>
       </Routes>
     </BrowserRouter>
-  </React.StrictMode>,
+  // </React.StrictMode>,
 )
