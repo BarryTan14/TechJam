@@ -181,3 +181,4 @@ dmypy.json
 langgraph/output/
 
 mongodb_config.py
+langgraph/mongodb_config.py

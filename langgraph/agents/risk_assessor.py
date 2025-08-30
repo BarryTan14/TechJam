@@ -70,11 +70,9 @@ Return JSON:
                     thought_process = "Used LLM with JSON extraction"
                 
             except Exception as e:
-                analysis_result = self._fallback_risk_assessment(feature_analysis, regulation_matching)
-                thought_process = f"Used fallback assessment due to LLM failure: {e}"
+                raise Exception(f"Risk assessment failed: {e}")
         else:
-            analysis_result = self._fallback_risk_assessment(feature_analysis, regulation_matching)
-            thought_process = "Used fallback assessment (no LLM available)"
+            raise Exception("No LLM available for risk assessment")
         
         # Calculate processing time
         processing_time = (get_singapore_time() - start_time).total_seconds()
@@ -172,47 +170,7 @@ Return JSON:
         except:
             pass
         
-        # If no JSON found, return default structure
-        return {
-            "overall_risk_level": "medium",
-            "risk_factors": [
-                {
-                    "factor": "data_collection_scope",
-                    "risk_level": "medium",
-                    "description": "Data collection and processing risks"
-                }
-            ],
-            "compliance_gaps": ["Missing consent management"],
-            "confidence_score": 0.7,
-            "mitigation_recommendations": ["Implement consent management"]
-        }
+        # If no JSON found, raise an exception
+        raise Exception("Failed to extract valid JSON from LLM response")
     
-    def _fallback_risk_assessment(self, feature_analysis: Dict[str, Any], regulation_matching: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback risk assessment"""
-        data_types = feature_analysis.get("data_types_collected", [])
-        regulations = regulation_matching.get("applicable_regulations", [])
-        
-        risk_level = "medium"
-        if len(data_types) > 2 or len(regulations) > 2:
-            risk_level = "high"
-        
-        return {
-            "overall_risk_level": risk_level,
-            "risk_factors": [
-                {
-                    "factor": "data_collection_scope",
-                    "risk_level": "medium",
-                    "description": "Multiple data types being collected"
-                }
-            ],
-            "compliance_gaps": [
-                {
-                    "gap": "consent_mechanism",
-                    "severity": "medium",
-                    "description": "Consent mechanism may need review"
-                }
-            ],
-            "mitigation_recommendations": ["implement_explicit_consent", "add_data_minimization"],
-            "confidence_score": 0.7,
-            "requires_human_review": risk_level == "high"
-        }
+

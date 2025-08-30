@@ -44,6 +44,8 @@ class WorkflowResponse(BaseModel):
     state_analysis_results: Dict[str, Dict[str, Any]]  # New state-centric results
     processing_time: float
     status: str = "completed"
+    executive_report: Optional[Dict[str, Any]] = None
+    cultural_sensitivity_analysis: Optional[Dict[str, Any]] = None  # Add cultural sensitivity analysis
 
 # FastAPI app
 app = FastAPI(
@@ -157,7 +159,9 @@ async def analyze_prd(request: PRDRequest):
             non_compliant_states=final_state.non_compliant_states_dict or {},
             feature_compliance_results=final_state.feature_compliance_results or [],
             state_analysis_results=final_state.state_analysis_results or {},
-            processing_time=final_state.total_processing_time
+            processing_time=final_state.total_processing_time,
+            executive_report=final_state.executive_report,  # Include executive report
+            cultural_sensitivity_analysis=final_state.cultural_sensitivity_analysis  # Include cultural sensitivity analysis
         )
         
         logger.info(f"✅ PRD analysis completed for: {request.name}")
@@ -166,6 +170,20 @@ async def analyze_prd(request: PRDRequest):
         
         return response
         
+    except ValueError as e:
+        # Handle specific error for no features detected
+        if "No features detected" in str(e):
+            logger.warning(f"⚠️ No features detected in PRD: {request.name}")
+            raise HTTPException(
+                status_code=400,
+                detail=str(e)
+            )
+        else:
+            logger.error(f"❌ ValueError in PRD analysis: {e}")
+            raise HTTPException(
+                status_code=500,
+                detail=f"Failed to analyze PRD: {str(e)}"
+            )
     except Exception as e:
         logger.error(f"❌ Error analyzing PRD: {e}")
         raise HTTPException(

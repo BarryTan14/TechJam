@@ -65,11 +65,9 @@ Return JSON:
                     thought_process = "Used LLM with JSON extraction"
                 
             except Exception as e:
-                analysis_result = self._fallback_regulation_matching(feature_analysis)
-                thought_process = f"Used fallback matching due to LLM failure: {e}"
+                raise Exception(f"Regulation matching failed: {e}")
         else:
-            analysis_result = self._fallback_regulation_matching(feature_analysis)
-            thought_process = "Used fallback matching (no LLM available)"
+            raise Exception("No LLM available for regulation matching")
         
         # Calculate processing time
         processing_time = (get_singapore_time() - start_time).total_seconds()
@@ -156,33 +154,7 @@ Return JSON:
         except:
             pass
         
-        # If no JSON found, return default structure
-        return {
-            "applicable_regulations": ["GDPR", "CCPA"],
-            "regulation_reasons": {
-                "GDPR": "Processing personal data of EU residents",
-                "CCPA": "California residents' data processing"
-            },
-            "compliance_priority": "medium",
-            "key_requirements": ["consent_management", "data_minimization"],
-            "geographic_scope": ["EU", "California"]
-        }
+        # If no JSON found, raise an exception
+        raise Exception("Failed to extract valid JSON from LLM response")
     
-    def _fallback_regulation_matching(self, feature_analysis: Dict[str, Any]) -> Dict[str, Any]:
-        """Fallback regulation matching"""
-        data_types = feature_analysis.get("data_types_collected", [])
-        
-        applicable_regulations = []
-        if "personal_data" in data_types:
-            applicable_regulations.extend(["GDPR", "CCPA", "PIPL", "LGPD"])
-        
-        return {
-            "applicable_regulations": list(set(applicable_regulations)) or ["GDPR", "CCPA"],
-            "regulation_reasons": {
-                "GDPR": "Personal data processing detected",
-                "CCPA": "Personal data processing detected"
-            },
-            "key_requirements": ["consent_management", "data_minimization"],
-            "compliance_priority": "medium",
-            "geographic_scope": ["EU", "California"]
-        }
+
