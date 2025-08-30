@@ -452,7 +452,30 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 def get_current_timestamp():
-    return datetime.utcnow()
+    # Use Singapore time (UTC+8) instead of UTC
+    from datetime import timezone, timedelta
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
+
+def format_singapore_time_for_display(timestamp):
+    """Format timestamp for display in Singapore timezone"""
+    if isinstance(timestamp, str):
+        # If it's a string, parse it first
+        timestamp = datetime.fromisoformat(timestamp.replace('Z', '+00:00'))
+    
+    # Convert to Singapore timezone if it's not already
+    if timestamp.tzinfo is None or timestamp.tzinfo.utcoffset(timestamp) is None:
+        # If no timezone info, assume it's UTC and convert to Singapore
+        from datetime import timezone, timedelta
+        singapore_tz = timezone(timedelta(hours=8))
+        timestamp = timestamp.replace(tzinfo=timezone.utc).astimezone(singapore_tz)
+    elif timestamp.tzinfo != timezone(timedelta(hours=8)):
+        # If it's not Singapore time, convert it
+        from datetime import timezone, timedelta
+        singapore_tz = timezone(timedelta(hours=8))
+        timestamp = timestamp.astimezone(singapore_tz)
+    
+    return timestamp
 
 def ensure_timestamps(data: dict) -> dict:
     """Ensure all required timestamp fields are present"""
@@ -929,14 +952,14 @@ async def get_prd_dashboard(prd_id: str):
         log_data = {
             "uuid": generate_uuid(),
             "prd_uuid": prd_id,
-            "action": "RETREIVED",
+            "action": "RETRIEVED",
             "details": f"PRD '{prd['Name']}' dashboard viewed",
             "level": "INFO",
             "timestamp": current_time
         }
         logs_collection.insert_one(log_data)
 
-        logger.info(f"Dashboard data retrieved for PRD: {prd_id} with {len(features)} features")
+        logger.info(f"Dashboard data retrieved for PRD: {current_time} features")
         return dashboard_data
         
     except HTTPException:
@@ -1250,9 +1273,12 @@ async def get_all_logs():
     """Get all logs"""
     try:
         logs = list(logs_collection.find({}, {"_id": 0}).sort("timestamp", -1))
-        # Ensure all logs have required timestamp fields
+        # Ensure all logs have required timestamp fields and format for Singapore time
         for log in logs:
             ensure_timestamps(log)
+            # Format timestamp for Singapore time display
+            if log.get('timestamp'):
+                log['timestamp'] = format_singapore_time_for_display(log['timestamp'])
         logger.info(f"Retrieved {len(logs)} log entries")
         return logs
     except Exception as e:
@@ -1288,9 +1314,12 @@ async def get_logs_by_prd(prd_uuid: str):
             raise HTTPException(status_code=404, detail="PRD not found")
         
         logs = list(logs_collection.find({"prd_uuid": prd_uuid}, {"_id": 0}).sort("timestamp", -1))
-        # Ensure all logs have required timestamp fields
+        # Ensure all logs have required timestamp fields and format for Singapore time
         for log in logs:
             ensure_timestamps(log)
+            # Format timestamp for Singapore time display
+            if log.get('timestamp'):
+                log['timestamp'] = format_singapore_time_for_display(log['timestamp'])
         logger.info(f"Retrieved {len(logs)} log entries for PRD {prd_uuid}")
         return logs
     except HTTPException:

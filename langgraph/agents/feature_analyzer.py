@@ -3,9 +3,15 @@ Feature Analyzer Agent - Extracts compliance-relevant information from documents
 """
 
 import json
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any
 from .models import AgentOutput
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 
 class FeatureAnalyzerAgent:
@@ -16,7 +22,7 @@ class FeatureAnalyzerAgent:
     
     def analyze(self, feature_name: str, feature_description: str, feature_content: str) -> AgentOutput:
         """Analyze feature and extract compliance-relevant information"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         
         # Optimized prompt - more concise and focused
         prompt = f"""Analyze this feature for compliance:
@@ -61,7 +67,7 @@ Focus on data types, processing purposes, and compliance concerns."""
             thought_process = "Used fallback analysis (no LLM available)"
         
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         # Create agent output
         agent_output = AgentOutput(
@@ -75,7 +81,7 @@ Focus on data types, processing purposes, and compliance concerns."""
             analysis_result=analysis_result,
             confidence_score=0.85 if self.llm else 0.65,
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
         
         return agent_output
