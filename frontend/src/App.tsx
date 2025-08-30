@@ -1,8 +1,8 @@
-import { Table, Button, Popconfirm, Row, Modal, Form, Input, message } from "antd";
+import { Table, Button, Popconfirm, Row, Modal, Form, Input, message, Descriptions } from "antd";
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from "react";
-import { fetchPrd, createPrd, createPrdFromFile, deletePrd, updatePrd } from "./api";
+import { fetchPrd, createPrd, deletePrd, updatePrd } from "./api";
 import type { FormInstance } from 'antd/es/form';
 
 interface PrdData {
@@ -71,21 +71,9 @@ interface ModalFormProps {
     form: FormInstance;
     isEdit?: boolean;
     initialValues?: Partial<PrdData>;
-    inputType: 'text' | 'file';
-    onInputTypeChange: (type: 'text' | 'file') => void;
-    fileList: any[];
-    onFileChange: (info: any) => void;
 }
 
-const ModalForm: React.FC<ModalFormProps> = ({ 
-    form, 
-    isEdit = false, 
-    initialValues = {}, 
-    inputType,
-    onInputTypeChange,
-    fileList,
-    onFileChange
-}) => {
+const ModalForm: React.FC<ModalFormProps> = ({ form, isEdit = false, initialValues = {} }) => {
   return (
     <Form 
       form={form}
@@ -101,47 +89,16 @@ const ModalForm: React.FC<ModalFormProps> = ({
               placeholder="Enter name of PRD" 
             />
           </Form.Item>
-          
-          <Form.Item label="Input Type">
-            <Radio.Group value={inputType} onChange={(e) => onInputTypeChange(e.target.value)}>
-              <Space direction="vertical">
-                <Radio value="text">Text Input</Radio>
-                <Radio value="file">File Upload</Radio>
-              </Space>
-            </Radio.Group>
+          <Form.Item
+            name="Description"
+            label="Description"
+            rules={[{ required: true, message: 'Please enter the PRD description!' }]}
+          >
+            <Input.TextArea 
+              rows={4} 
+              placeholder="Please enter description" 
+            />
           </Form.Item>
-          
-          {inputType === 'text' ? (
-            <>
-              <Form.Item
-                name="Description"
-                label="Description"
-                rules={[{ required: true, message: 'Please enter the PRD description!' }]}
-              >
-                <Input.TextArea 
-                  rows={4} 
-                  placeholder="Please enter description" 
-                />
-              </Form.Item>
-            </>
-          ) : (
-            <Form.Item
-              name="file"
-              label="Upload File"
-              rules={[{ required: true, message: 'Please upload a file!' }]}
-            >
-              <Upload
-                beforeUpload={() => false} // Prevent auto upload
-                fileList={fileList}
-                onChange={onFileChange}
-                accept=".txt,.md,.doc,.docx"
-                maxCount={1}
-              >
-                <Button icon={<UploadOutlined />}>Click to Upload</Button>
-              </Upload>
-            </Form.Item>
-          )}
-          
           <Form.Item
             name="Status"
             label="Status"
@@ -170,8 +127,6 @@ export default function App() {
     const [prdData, setPrdData] = useState<PrdData[]>([]);
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm();
-    const [inputType, setInputType] = useState<'text' | 'file'>('text');
-    const [fileList, setFileList] = useState<any[]>([]);
 
     // Fetch PRDs on component mount
     useEffect(() => {
@@ -196,7 +151,6 @@ export default function App() {
         if (prd) {
             setIsEdit(true);
             setCurrentPrd(prd);
-            setInputType('text'); // Edit mode only supports text
             form.setFieldsValue({
                 Name: prd.Name,
                 Description: prd.Description,
@@ -205,30 +159,15 @@ export default function App() {
         } else {
             setIsEdit(false);
             setCurrentPrd(null);
-            setInputType('text');
-            setFileList([]);
             form.resetFields();
         }
         setOpenModal(true);
-    };
-
-    const handleFileChange = (info: any) => {
-        setFileList(info.fileList);
-    };
-
-    const handleInputTypeChange = (type: 'text' | 'file') => {
-        setInputType(type);
-        if (type === 'text') {
-            setFileList([]);
-        }
     };
 
   const onCloseModal = () => {
     setOpenModal(false);
         setIsEdit(false);
         setCurrentPrd(null);
-        setInputType('text');
-        setFileList([]);
         form.resetFields();
     };
 
@@ -237,31 +176,14 @@ export default function App() {
             const values = await form.validateFields();
             
             if (isEdit && currentPrd) {
-                // Update existing PRD (only supports text)
+                // Update existing PRD
                 await updatePrd(currentPrd.ID, values);
                 message.success('PRD updated successfully');
                 // Note: Backend automatically logs the update operation
             } else {
                 // Create new PRD
-                if (inputType === 'file') {
-                    // Handle file upload
-                    if (fileList.length === 0) {
-                        message.error('Please upload a file');
-                        return;
-                    }
-                    
-                    const formData = new FormData();
-                    formData.append('Name', values.Name);
-                    formData.append('Status', values.Status || 'Draft');
-                    formData.append('file', fileList[0].originFileObj);
-                    
-                    const response = await createPrdFromFile(formData);
-                    message.success('PRD created successfully from file');
-                } else {
-                    // Handle text input
-                    const response = await createPrd(values);
-                    message.success('PRD created successfully');
-                }
+                const response = await createPrd(values);
+                message.success('PRD created successfully');
                 // Note: Backend automatically logs the creation operation
             }
             
@@ -322,10 +244,6 @@ export default function App() {
                     form={form} 
                     isEdit={isEdit} 
                     initialValues={currentPrd || {}}
-                    inputType={inputType}
-                    onInputTypeChange={handleInputTypeChange}
-                    fileList={fileList}
-                    onFileChange={handleFileChange}
                 />
             </Modal>
             <Table 

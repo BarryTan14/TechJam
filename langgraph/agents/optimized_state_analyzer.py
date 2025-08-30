@@ -203,122 +203,64 @@ class OptimizedStateAnalyzer:
                 "technical_requirements": feature.technical_requirements[:5] if feature.technical_requirements else []
             })
         
-        # Create comprehensive prompt for detailed analysis
-        prompt = f"""Perform a comprehensive compliance analysis for {len(features)} features against {state_regulation.state_name} ({state_regulation.state_code}) regulations.
+        # Create comprehensive prompt
+        prompt = f"""Analyze compliance for {len(features)} features against {state_regulation.state_name} ({state_regulation.state_code}):
 
-STATE REGULATORY CONTEXT:
-- State: {state_regulation.state_name} ({state_regulation.state_code})
-- Applicable Regulations: {', '.join(state_regulation.regulations)}
-- Risk Level: {state_regulation.risk_level.upper()}
-- Enforcement Level: {state_regulation.enforcement_level.upper()}
+State Information:
+- State: {state_regulation.state_name}
+- Regulations: {', '.join(state_regulation.regulations)}
+- Risk Level: {state_regulation.risk_level}
+- Enforcement Level: {state_regulation.enforcement_level}
 - Key Requirements: {', '.join(state_regulation.key_requirements)}
-- Potential Penalties: {', '.join(state_regulation.penalties)}
-- Effective Date: {state_regulation.effective_date}
+- Penalties: {', '.join(state_regulation.penalties)}
 
-FEATURES TO ANALYZE:
+Features to analyze:
 {json.dumps(feature_summaries, indent=2)}
 
-ANALYSIS REQUIREMENTS:
-For each feature, provide a detailed analysis including:
-
-1. **Data Type Assessment**: Evaluate the sensitivity of data types being collected
-2. **Requirement Mapping**: Check each key requirement against the feature implementation
-3. **Compliance Status**: Determine if the feature meets state requirements
-4. **Risk Assessment**: Calculate risk based on data sensitivity and compliance gaps (ONLY use "low" or "high" - no "medium" or "critical")
-5. **Detailed Reasoning**: Provide comprehensive explanation of findings
-6. **Required Actions**: List specific actions needed for compliance
-
-Return JSON with detailed analysis for each feature:
+Return JSON with analysis for each feature:
 {{
     "feature_results": [
         {{
             "feature_id": "feature_1",
             "risk_score": 0.3,
-            "risk_level": "low|high",
+            "risk_level": "low|medium|high|critical",
             "is_compliant": true/false,
             "non_compliant_regulations": ["regulation_name"],
-                         "required_actions": ["Implement specific compliance measures", "Establish data protection controls", "Create audit procedures"],
-            "reasoning": "COMPREHENSIVE ANALYSIS: Include detailed explanation of data types, requirement compliance, risk factors, and specific compliance gaps. Use clear language and provide actionable insights.",
+            "required_actions": ["action1", "action2"],
+            "reasoning": "Brief explanation",
             "confidence_score": 0.8
         }}
     ]
 }}
 
-IMPORTANT: Provide detailed, actionable reasoning that explains:
-- Why the feature is compliant or non-compliant
-- Which specific requirements are met or violated
-- What data types create compliance risks
-- How the state's enforcement level affects the analysis
-- Specific steps needed to achieve compliance
-
-For required_actions, provide specific, actionable recommendations such as:
-- Technical implementation steps (e.g., "Implement PII encryption at rest and in transit")
-- Policy and procedure updates (e.g., "Establish data retention policies for PII")
-- Compliance measures (e.g., "Create PII inventory and mapping")
-- Training and awareness (e.g., "Implement compliance training for development teams")
-- Monitoring and auditing (e.g., "Establish compliance monitoring and reporting procedures")
-
-Make the reasoning comprehensive and business-friendly."""
+Focus on key compliance issues. Keep responses concise and accurate."""
         
         try:
             response = self.llm.generate_content(prompt)
             
-            # Validate response
-            if not response:
-                print(f"⚠️ LLM returned None response for {state_regulation.state_name}")
-                raise Exception("LLM returned None response")
-            
-            if not response.text:
-                print(f"⚠️ LLM returned empty text response for {state_regulation.state_name}")
-                raise Exception("LLM returned empty text response")
-            
-            if not response.text.strip():
-                print(f"⚠️ LLM returned whitespace-only response for {state_regulation.state_name}")
-                raise Exception("LLM returned whitespace-only response")
-            
-            print(f"📝 LLM Response received for {state_regulation.state_name} ({len(response.text)} characters)")
-            print(f"📄 Raw response preview: {response.text[:200]}...")
+            if not response or not response.text:
+                raise Exception("LLM returned empty response")
             
             # Parse JSON response
             try:
                 analysis_result = json.loads(response.text)
                 feature_results = analysis_result.get("feature_results", [])
-                print(f"✅ JSON parsing successful for {state_regulation.state_name}")
-            except json.JSONDecodeError as json_error:
-                print(f"⚠️ JSON parsing failed for {state_regulation.state_name}: {json_error}")
-                print(f"📄 Raw response: {response.text[:500]}...")
+            except json.JSONDecodeError:
                 # Try to extract JSON from response
                 feature_results = self._extract_json_from_response(response.text)
-                if not feature_results:
-                    print(f"⚠️ JSON extraction also failed for {state_regulation.state_name}")
-                    raise Exception(f"Failed to parse or extract JSON from LLM response: {json_error}")
-            
-            # Validate feature_results
-            if not feature_results:
-                print(f"⚠️ No feature results found for {state_regulation.state_name}")
-                raise Exception("No feature results found in LLM response")
             
             # Convert to StateAnalysisResult objects
             results = []
             for i, result in enumerate(feature_results):
                 if i < len(features):
                     feature = features[i]
-                    
-                    # Ensure risk_level is only "low" or "high"
-                    risk_level = result.get("risk_level", "low")
-                    if risk_level not in ["low", "high"]:
-                        # Convert any other values to "low" or "high" based on risk_score
-                        risk_score = result.get("risk_score", 0.5)
-                        risk_level = "high" if risk_score >= 0.6 else "low"
-                        print(f"⚠️ Converted risk_level from '{result.get('risk_level', 'unknown')}' to '{risk_level}' for {feature.feature_name}")
-                    
                     state_result = StateAnalysisResult(
                         state_code=state_regulation.state_code,
                         state_name=state_regulation.state_name,
                         feature_id=feature.feature_id,
                         feature_name=feature.feature_name,
                         risk_score=result.get("risk_score", 0.5),
-                        risk_level=risk_level,
+                        risk_level=result.get("risk_level", "medium"),
                         is_compliant=result.get("is_compliant", True),
                         non_compliant_regulations=result.get("non_compliant_regulations", []),
                         required_actions=result.get("required_actions", []),
@@ -328,15 +270,10 @@ Make the reasoning comprehensive and business-friendly."""
                     )
                     results.append(state_result)
             
-            print(f"✅ Successfully processed {len(results)} features for {state_regulation.state_name}")
             return results
             
         except Exception as e:
-            print(f"❌ Batch LLM analysis failed for {state_regulation.state_name}: {e}")
-            print(f"🔍 Error type: {type(e).__name__}")
-            # Fall back to pattern matching analysis
-            print(f"🔄 Falling back to pattern matching analysis for {state_regulation.state_name}")
-            return self._pattern_matching_analysis(features, state_regulation, "medium")
+            raise Exception(f"Batch LLM analysis failed: {e}")
     
     def _pattern_matching_analysis(self, features: List[ExtractedFeature], 
                                   state_regulation: StateRegulation, 
@@ -369,198 +306,57 @@ Make the reasoning comprehensive and business-friendly."""
     def _analyze_feature_patterns(self, feature: ExtractedFeature, 
                                  state_regulation: StateRegulation, 
                                  risk_level: str) -> Dict[str, Any]:
-        """Analyze a feature using pattern matching rules with detailed reasoning"""
+        """Analyze a feature using pattern matching rules"""
         
         # Initialize analysis
         risk_score = 0.3  # Base risk score
         is_compliant = True
         non_compliant_regulations = []
         required_actions = []
-        reasoning_parts = []
+        reasoning = []
         
-        # Start with comprehensive reasoning
-        reasoning_parts.append(f"Analyzing feature '{feature.feature_name}' against {state_regulation.state_name} ({state_regulation.state_code}) regulations")
-        
-        # Check data types and their sensitivity
-        sensitive_data_types = {
-            "personal_identifiable_information": "PII requires strict protection under most privacy laws",
-            "biometric_data": "Biometric data has special protections under laws like BIPA",
-            "health_data": "Health data is protected under HIPAA and state health privacy laws",
-            "financial_data": "Financial data requires additional security measures",
-            "location_data": "Location data can reveal sensitive personal patterns",
-            "behavioral_data": "Behavioral data can be used for profiling and targeting"
-        }
+        # Check data types
+        sensitive_data_types = ["personal_identifiable_information", "biometric_data", "health_data", 
+                               "financial_data", "location_data", "behavioral_data"]
         
         feature_data_types = [dt.lower() for dt in feature.data_types]
-        sensitive_data_found = []
         
+        # Adjust risk based on data types
         for data_type in feature_data_types:
-            for sensitive_type, explanation in sensitive_data_types.items():
-                if sensitive_type in data_type:
-                    risk_score += 0.2
-                    sensitive_data_found.append(f"{data_type} ({explanation})")
+            if any(sensitive in data_type for sensitive in sensitive_data_types):
+                risk_score += 0.2
+                reasoning.append(f"Feature collects sensitive data: {data_type}")
         
-        if sensitive_data_found:
-            reasoning_parts.append(f"Feature collects sensitive data types: {', '.join(sensitive_data_found)}")
-        
-        # Analyze state-specific requirements in detail
-        reasoning_parts.append(f"State risk level: {state_regulation.risk_level.upper()}")
-        reasoning_parts.append(f"State enforcement level: {state_regulation.enforcement_level.upper()}")
-        
-        # Check key requirements against feature description
-        feature_text = f"{feature.feature_name} {feature.feature_description}".lower()
-        
-        for requirement in state_regulation.key_requirements:
-            req_lower = requirement.lower()
-            
-            if "consent" in req_lower:
-                if "consent" not in feature_text and "opt-in" not in feature_text and "permission" not in feature_text:
+        # Check state-specific requirements
+        if state_regulation.risk_level == "high":
+            # High-risk states have stricter requirements
+            if any("consent" in req.lower() for req in state_regulation.key_requirements):
+                if "consent" not in feature.feature_description.lower():
                     is_compliant = False
                     non_compliant_regulations.extend(state_regulation.regulations)
-                    required_actions.append("Implement explicit consent mechanisms")
-                    reasoning_parts.append(f"❌ Consent requirement not met: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Consent requirement appears satisfied: {requirement}")
+                    required_actions.append("Implement consent mechanisms")
+                    reasoning.append("Consent required but not implemented")
             
-            elif "deletion" in req_lower or "delete" in req_lower:
-                if "delete" not in feature_text and "remove" not in feature_text and "erase" not in feature_text:
+            if any("deletion" in req.lower() for req in state_regulation.key_requirements):
+                if "delete" not in feature.feature_description.lower() and "remove" not in feature.feature_description.lower():
                     required_actions.append("Implement data deletion rights")
-                    reasoning_parts.append(f"⚠️ Data deletion rights required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data deletion rights appear implemented: {requirement}")
-            
-            elif "access" in req_lower:
-                if "access" not in feature_text and "view" not in feature_text and "retrieve" not in feature_text:
-                    required_actions.append("Implement data access rights")
-                    reasoning_parts.append(f"⚠️ Data access rights required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data access rights appear implemented: {requirement}")
-            
-            elif "portability" in req_lower:
-                if "export" not in feature_text and "download" not in feature_text and "portability" not in feature_text:
-                    required_actions.append("Implement data portability mechanisms")
-                    reasoning_parts.append(f"⚠️ Data portability required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data portability appears implemented: {requirement}")
-            
-            elif "minimization" in req_lower:
-                if "minimal" not in feature_text and "necessary" not in feature_text and "limited" not in feature_text:
-                    required_actions.append("Implement data minimization practices")
-                    reasoning_parts.append(f"⚠️ Data minimization required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data minimization appears implemented: {requirement}")
-            
-            elif "purpose" in req_lower and "limitation" in req_lower:
-                if "purpose" not in feature_text and "use" not in feature_text:
-                    required_actions.append("Implement purpose limitation controls")
-                    reasoning_parts.append(f"⚠️ Purpose limitation required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Purpose limitation appears implemented: {requirement}")
+                    reasoning.append("Data deletion rights required")
         
-        # Check enforcement level impact
+        # Check enforcement level
         if state_regulation.enforcement_level == "strict":
             risk_score += 0.1
-            reasoning_parts.append("⚠️ State has strict enforcement - higher penalties for violations")
-        elif state_regulation.enforcement_level == "moderate":
-            reasoning_parts.append("ℹ️ State has moderate enforcement - standard penalties apply")
-        else:
-            reasoning_parts.append("ℹ️ State has lenient enforcement - lower penalties for violations")
+            reasoning.append("State has strict enforcement")
         
-        # Analyze penalties
-        if state_regulation.penalties:
-            reasoning_parts.append(f"Potential penalties: {', '.join(state_regulation.penalties)}")
-        
-        # Determine final risk level with detailed explanation (only low or high)
-        if risk_score >= 0.6:
+        # Determine final risk level
+        if risk_score >= 0.8:
             final_risk_level = "high"
-            risk_explanation = "HIGH RISK: Multiple compliance issues detected with strict state enforcement"
+        elif risk_score >= 0.6:
+            final_risk_level = "medium"
         else:
             final_risk_level = "low"
-            risk_explanation = "LOW RISK: Feature appears largely compliant with state requirements"
-        
-        reasoning_parts.append(f"Risk Assessment: {risk_explanation}")
-        
-        # Add compliance summary
-        if is_compliant:
-            compliance_summary = f"✅ Feature is COMPLIANT with {state_regulation.state_name} requirements"
-        else:
-            compliance_summary = f"❌ Feature is NON-COMPLIANT with {state_regulation.state_name} requirements"
-        
-        reasoning_parts.append(compliance_summary)
-        
-        # Add required actions summary
-        if required_actions:
-            reasoning_parts.append(f"Required Actions: {', '.join(required_actions)}")
-        
-        # Add data type specific recommendations
-        data_type_recommendations = []
-        for data_type in feature_data_types:
-            if "personal_identifiable_information" in data_type:
-                data_type_recommendations.extend([
-                    "Implement PII encryption at rest and in transit",
-                    "Establish data retention policies for PII",
-                    "Create PII inventory and mapping"
-                ])
-            elif "biometric_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement biometric data protection measures",
-                    "Obtain explicit consent for biometric processing",
-                    "Establish biometric data deletion procedures"
-                ])
-            elif "health_data" in data_type:
-                data_type_recommendations.extend([
-                    "Ensure HIPAA compliance for health data",
-                    "Implement health data access controls",
-                    "Establish health data breach notification procedures"
-                ])
-            elif "financial_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement PCI DSS compliance measures",
-                    "Establish financial data encryption standards",
-                    "Create financial data access audit trails"
-                ])
-            elif "location_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement location data anonymization",
-                    "Establish location data retention limits",
-                    "Create location data access controls"
-                ])
-            elif "behavioral_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement behavioral data profiling controls",
-                    "Establish behavioral data opt-out mechanisms",
-                    "Create behavioral data impact assessments"
-                ])
-        
-        # Add unique data type recommendations
-        for rec in data_type_recommendations:
-            if rec not in required_actions:
-                required_actions.append(rec)
-        
-        # Add state-specific recommendations based on enforcement level
-        if state_regulation.enforcement_level == "strict":
-            required_actions.append(f"Implement enhanced compliance monitoring for {state_regulation.state_name}")
-            required_actions.append(f"Establish regular compliance audits for {state_regulation.state_name}")
-        elif state_regulation.enforcement_level == "moderate":
-            required_actions.append(f"Monitor compliance requirements for {state_regulation.state_name}")
-        
-        # Add general compliance recommendations
-        if not is_compliant:
-            required_actions.extend([
-                "Conduct compliance gap analysis",
-                "Update privacy policies and terms of service",
-                "Implement compliance training for development teams",
-                "Establish compliance monitoring and reporting procedures"
-            ])
         
         # Adjust confidence based on analysis depth
-        if risk_level == "high":
-            confidence_score = 0.8  # Higher confidence for detailed analysis
-        else:
-            confidence_score = 0.7  # Lower confidence for basic analysis
-        
-        # Combine all reasoning parts
-        detailed_reasoning = "\n".join(reasoning_parts)
+        confidence_score = 0.7 if risk_level == "low" else 0.8
         
         return {
             "risk_score": min(risk_score, 1.0),
@@ -568,7 +364,7 @@ Make the reasoning comprehensive and business-friendly."""
             "is_compliant": is_compliant,
             "non_compliant_regulations": non_compliant_regulations,
             "required_actions": required_actions,
-            "reasoning": detailed_reasoning,
+            "reasoning": "; ".join(reasoning) if reasoning else "Feature appears compliant with state requirements",
             "confidence_score": confidence_score
         }
     
@@ -625,7 +421,6 @@ Provide improvements to the analysis. Return JSON with updated results."""
         import re
         
         if not response_text or not response_text.strip():
-            print("⚠️ Empty response text provided to JSON extraction")
             return []
         
         # Clean the response text
@@ -637,37 +432,25 @@ Provide improvements to the analysis. Return JSON with updated results."""
         cleaned_text = re.sub(r'\n?```\s*$', '', cleaned_text)
         cleaned_text = cleaned_text.strip()
         
-        print(f"🔍 Attempting JSON extraction from cleaned text ({len(cleaned_text)} characters)")
-        print(f"📄 Cleaned text preview: {cleaned_text[:200]}...")
-        
         # Try to parse the cleaned JSON directly
         try:
             result = json.loads(cleaned_text)
-            feature_results = result.get("feature_results", [])
-            print(f"✅ Direct JSON parsing successful, found {len(feature_results)} feature results")
-            return feature_results
-        except json.JSONDecodeError as e:
-            print(f"⚠️ Direct JSON parsing failed: {e}")
+            return result.get("feature_results", [])
+        except json.JSONDecodeError:
+            pass
         
         # Try to find JSON object in the response
         json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
         matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
         
-        print(f"🔍 Found {len(matches)} potential JSON matches")
-        
         if matches:
-            for i, match in enumerate(matches):
+            for match in matches:
                 try:
                     result = json.loads(match)
-                    feature_results = result.get("feature_results", [])
-                    if feature_results:
-                        print(f"✅ JSON extraction successful from match {i+1}, found {len(feature_results)} feature results")
-                        return feature_results
-                except json.JSONDecodeError as e:
-                    print(f"⚠️ JSON parsing failed for match {i+1}: {e}")
+                    return result.get("feature_results", [])
+                except json.JSONDecodeError:
                     continue
         
-        print("❌ No valid JSON found in response")
         return []
     
     def _calculate_overall_stats(self, state_results: Dict[str, List[StateAnalysisResult]], 
