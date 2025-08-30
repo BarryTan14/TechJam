@@ -82,7 +82,6 @@ export default function Dashboard() {
 
     useEffect(() => {
         if (selectedFeature) {
-            console.log(selectedFeature)
             setMapData([])
             const stateComplianceScore = selectedFeature.state_compliance_scores
             const list = Object.values(stateComplianceScore).map((state) => ({
@@ -154,7 +153,6 @@ export default function Dashboard() {
             <Card style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} title={<>Feature: <Select
                 style={{ width: "47%" }}
                 onChange={(value) => {
-                    setSelectedFeature(null)
                     const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
                     setSelectedFeature(feature);
                 }}
