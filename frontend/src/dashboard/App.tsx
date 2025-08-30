@@ -191,7 +191,7 @@ export default function Dashboard() {
             style={{ marginBottom: "10px", flex: 1}}
           >
             {/* Make the parent positioned so the legend anchors to it */}
-            <div style={{ height: 365, position: 'relative', cursor: "pointer" }}>
+            <div style={{ height: 300, position: 'relative', cursor: "pointer" }}>
               <ResponsiveChoropleth
                 data={mapData}
                 features={countries.features}
@@ -236,7 +236,7 @@ export default function Dashboard() {
                 style={{
                   position: 'absolute',
                   right: 10,
-                  bottom: 10,
+                  bottom: 15,
                   background: 'white',
                   padding: 10,
                   borderRadius: 6,
@@ -245,7 +245,7 @@ export default function Dashboard() {
               >
                 <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
                   <div style={{ width: 15, height: 15, background: '#FF0000', marginRight: 8 }}></div>
-                  <span>High</span>
+                  <span>Non-Compliant</span>
                 </div>
                 {/* <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
                   <div style={{ width: 15, height: 15, background: '#ffa600ff', marginRight: 8 }}></div>
@@ -253,28 +253,42 @@ export default function Dashboard() {
                 </div> */}
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <div style={{ width: 15, height: 15, background: '#008000', marginRight: 8 }}></div>
-                  <span>Low</span>
+                  <span>Compliant</span>
                 </div>
               </div>
             </div>
-            <Card style={{ marginBottom: "10px", overflowY: "scroll", flex: 1 }}>
-                <>
-                    <div>
-                        Feature:{" "} 
-                        <Select
-                        style={{ width: "70%" }}
-                        defaultValue={dashboardData.prd.langgraph_analysis.feature_compliance_results[0]?.feature.feature_name || ""}
-                        onChange={(value) => {
-                            const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
-                            setSelectedFeature(feature);
-                        }}
-                        options={featureOptionsWithCircles}
-                        placeholder="Select a feature"
-                        />
-                    </div>
-                    <div style={{marginTop: "20px", marginBottom:"5px"}}><b>Description</b>:</div>
-                    <div>{selectedFeature?.feature.feature_description}</div>
-                </>
+            <Card style={{ marginBottom: "10px", flex: 1 }}>
+                <div>
+                    Feature:{" "} 
+                    <Select
+                    style={{ width: "70%" }}
+                    defaultValue={dashboardData.prd.langgraph_analysis.feature_compliance_results[0]?.feature.feature_name || ""}
+                    onChange={(value) => {
+                        const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
+                        setSelectedFeature(feature);
+                    }}
+                    options={featureOptionsWithCircles}
+                    placeholder="Select a feature"
+                    />
+                </div>
+                <div style={{
+                    // position: "absolute",
+                    // zIndex: 3,
+                    width: "100%",
+                    backgroundColor: '#E6E6FA',
+                    color: "purple",
+                    marginRight:"8px",
+                    marginTop:"10px",
+                    fontSize: "12px",
+                    borderRadius: "8px", // adjust the radius as needed
+                    padding: "1px",     // optional padding for better appearance
+                    boxSizing: "border-box", // ensures padding doesn’t affect width
+                    }}
+                >
+                    <Collapse style={{backgroundColor: '#E6E6FA'}} items={items} bordered={false}/>
+                </div>
+                <div style={{marginTop: "20px", marginBottom:"5px"}}><b>Description</b>:</div>
+                <div>{selectedFeature?.feature.feature_description}</div>
             </Card> 
           </Card>
         </Col>
@@ -297,26 +311,7 @@ export default function Dashboard() {
                             </Card>
                         </Col>
                     </Row>
-                    <Row justify={"center"}>
-                        <Col span={22}>
-                            <div style={{
-                                position: "absolute",
-                                zIndex: 3,
-                                width: "100%",
-                                backgroundColor: '#E6E6FA',
-                                color: "purple",
-                                marginRight:"8px",
-                                fontSize: "12px",
-                                borderRadius: "8px", // adjust the radius as needed
-                                padding: "10px",     // optional padding for better appearance
-                                boxSizing: "border-box", // ensures padding doesn’t affect width
-                                }}
-                            >
-                                <Collapse style={{backgroundColor: '#E6E6FA'}} items={items} bordered={false}/>
-                            </div>
-                        </Col>
-                    </Row>
-                <div style={{textAlign:"center", fontSize:"16px", marginTop: "90px", marginBottom:"5px"}}>Recommendation</div>
+                <div style={{textAlign:"center", fontSize:"16px", marginTop: "30px", marginBottom:"5px"}}>Recommendation</div>
             {selectedFeature ? (
               <div>
                 {selectedFeature?.recommendations && selectedFeature?.recommendations.length > 0 ? (
