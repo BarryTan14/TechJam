@@ -145,7 +145,7 @@ export default function Dashboard() {
         </h1>
         <div style={{ marginLeft: "auto", display: "flex", gap: "3px" }}>
             <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
-            <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
+            <Button onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
             <Button onClick={() => signOut()}>Sign Out</Button>
         </div>
     </div>
