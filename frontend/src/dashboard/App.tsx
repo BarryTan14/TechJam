@@ -153,7 +153,7 @@ export default function Dashboard() {
       <Row style={{marginBottom:"10px"}}>
             <Card style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} title={<>Feature: <Select
                 style={{ width: "47%" }}
-                defaultValue={selectedFeature.feature.feature_name}
+                //defaultValue={selectedFeature.feature.feature_name}
                 onChange={(value) => {
                     const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
                     setSelectedFeature(feature);
