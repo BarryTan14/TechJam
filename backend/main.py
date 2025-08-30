@@ -12,6 +12,7 @@ import logging
 import os
 import httpx
 from dotenv import load_dotenv
+import bcrypt
 
 # Load environment variables
 load_dotenv()
@@ -43,12 +44,14 @@ if uri:
         prd_collection = db["PRD"]
         feature_data_collection = db["feature_data"]
         logs_collection = db["logs"]
+        users_collection = db["users"]
         
         # Create indexes for better performance
         prd_collection.create_index("ID", unique=True)
         feature_data_collection.create_index("uuid", unique=True)
         feature_data_collection.create_index("prd_uuid")
         logs_collection.create_index("prd_uuid")
+        users_collection.create_index("username", unique=True)
         
         MONGODB_CONNECTED = True
         print("✅ MongoDB collections initialized successfully!")
@@ -65,6 +68,7 @@ if uri:
         prd_collection = None
         feature_data_collection = None
         logs_collection = None
+        users_collection = None
 else:
     print("⚠️  Running in offline mode - API will work but data won't be persisted")
     MONGODB_CONNECTED = False
@@ -73,6 +77,7 @@ else:
     prd_collection = None
     feature_data_collection = None
     logs_collection = None
+    users_collection = None
     
     # Create mock collections for offline mode
     class MockCollection:
@@ -155,6 +160,7 @@ else:
     prd_collection = MockCollection("PRD")
     feature_data_collection = MockCollection("feature_data")
     logs_collection = MockCollection("logs")
+    users_collection = MockCollection("users")
 
 # Data migration function
 def migrate_existing_data():
@@ -298,6 +304,27 @@ class LangGraphResponse(BaseModel):
     processing_time: float
     status: str = "completed"
 
+# User Management Models
+class UserBase(BaseModel):
+    username: str = Field(..., description="Username", min_length=3, max_length=50)
+
+class UserCreate(UserBase):
+    password: str = Field(..., description="Password", min_length=8, max_length=100)
+
+class UserLogin(BaseModel):
+    username: str = Field(..., description="Username")
+    password: str = Field(..., description="Password")
+
+class UserResponse(UserBase):
+    user_id: str
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+    is_active: bool = True
+
+class UserUpdate(BaseModel):
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+
 
 
 # Create API router
@@ -344,6 +371,16 @@ def ensure_timestamps(data: dict) -> dict:
         data['timestamp'] = current_time
     
     return data
+
+def hash_password(password: str) -> str:
+    """Hash a password using bcrypt"""
+    salt = bcrypt.gensalt()
+    hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
+    return hashed.decode('utf-8')
+
+def verify_password(password: str, hashed_password: str) -> bool:
+    """Verify a password against its bcrypt hash"""
+    return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 # Run data migration for existing data
 migrate_existing_data()
@@ -423,7 +460,7 @@ async def create_prd(prd: PRDCreate):
                         "level": "INFO",
                         "timestamp": current_time
                     }
-                    logs_collection.insert_one(analysis_log_data)
+                    # logs_collection.insert_one(analysis_log_data)
                     
                     logger.info(f"✅ LangGraph analysis completed for PRD: {prd.Name}")
                     logger.info(f"📊 Raw response dumped to MongoDB")
@@ -682,7 +719,7 @@ async def create_feature_data(feature_data: FeatureDataCreate):
             "level": "INFO",
             "timestamp": current_time
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"Feature data created: {feature_uuid}")
         return FeatureDataResponse(**feature_data_doc)
@@ -788,7 +825,7 @@ async def update_feature_data(uuid: str, feature_data_update: FeatureDataUpdate)
             "level": "INFO",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         # Return updated feature data
         updated_feature_data = feature_data_collection.find_one({"uuid": uuid}, {"_id": 0})
@@ -822,7 +859,7 @@ async def delete_feature_data(uuid: str):
             "level": "WARNING",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"Feature data deleted: {uuid}")
         
@@ -939,6 +976,227 @@ async def delete_log(uuid: str):
         logger.error(f"Error deleting log {uuid}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete log: {str(e)}")
 
+# User Management CRUD Operations
+@api_router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+async def create_user(user: UserCreate):
+    """Create a new user with securely hashed password"""
+    try:
+        # Check if username already exists
+        existing_user = users_collection.find_one({"username": user.username})
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Username already exists")
+        
+        # Generate user ID and hash password
+        user_id = generate_uuid()
+        current_time = get_current_timestamp()
+        hashed_password = hash_password(user.password)
+        
+        user_data = {
+            "user_id": user_id,
+            "username": user.username,
+            "password_hash": hashed_password,  # Store hashed password, not plaintext
+            "created_at": current_time,
+            "updated_at": current_time,
+            "is_active": True
+        }
+        
+        # Save user to database
+        result = users_collection.insert_one(user_data)
+        
+        # Log the user creation
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",  # System-level log
+            "action": "USER_CREATED",
+            "details": f"User '{user.username}' created",
+            "level": "INFO",
+            "timestamp": current_time
+        }
+        logs_collection.insert_one(log_data)
+        
+        logger.info(f"User created: {user_id} ({user.username})")
+        
+        # Return user data without password hash
+        user_response_data = {
+            "user_id": user_id,
+            "username": user.username,
+            "created_at": current_time,
+            "updated_at": current_time,
+            "is_active": True
+        }
+        
+        return UserResponse(**user_response_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating user: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create user: {str(e)}")
+
+@api_router.post("/users/login", response_model=UserResponse)
+async def login_user(user_credentials: UserLogin):
+    """Authenticate user login with password verification"""
+    try:
+        # Find user by username
+        user = users_collection.find_one({"username": user_credentials.username})
+        if not user:
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+        
+        # Check if user is active
+        if not user.get("is_active", True):
+            raise HTTPException(status_code=401, detail="Account is deactivated")
+        
+        # Verify password
+        if not verify_password(user_credentials.password, user["password_hash"]):
+            raise HTTPException(status_code=401, detail="Invalid username or password")
+        
+        # Log successful login
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",
+            "action": "USER_LOGIN",
+            "details": f"User '{user_credentials.username}' logged in successfully",
+            "level": "INFO",
+            "timestamp": get_current_timestamp()
+        }
+        logs_collection.insert_one(log_data)
+        
+        logger.info(f"User logged in: {user['username']}")
+        
+        # Return user data without password hash
+        user_response_data = {
+            "user_id": user["user_id"],
+            "username": user["username"],
+            "created_at": user.get("created_at"),
+            "updated_at": user.get("updated_at"),
+            "is_active": user.get("is_active", True)
+        }
+        
+        return UserResponse(**user_response_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error during user login: {e}")
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
+
+@api_router.get("/users", response_model=List[UserResponse])
+async def get_all_users():
+    """Get all users (without password hashes)"""
+    try:
+        users = list(users_collection.find({}, {"_id": 0, "password_hash": 0}))
+        # Ensure all users have required timestamp fields
+        for user in users:
+            ensure_timestamps(user)
+        logger.info(f"Retrieved {len(users)} users")
+        return users
+    except Exception as e:
+        logger.error(f"Error retrieving users: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve users: {str(e)}")
+
+@api_router.get("/users/{user_id}", response_model=UserResponse)
+async def get_user(user_id: str):
+    """Get a specific user by ID (without password hash)"""
+    try:
+        user = users_collection.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+        if not user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Ensure user has required timestamp fields
+        ensure_timestamps(user)
+        
+        logger.info(f"Retrieved user: {user_id}")
+        return user
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve user: {str(e)}")
+
+@api_router.put("/users/{user_id}", response_model=UserResponse)
+async def update_user(user_id: str, user_update: UserUpdate):
+    """Update user information"""
+    try:
+        # Check if user exists
+        existing_user = users_collection.find_one({"user_id": user_id})
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Prepare update data
+        update_data = {}
+        if user_update.password is not None:
+            # Hash the new password
+            update_data["password_hash"] = hash_password(user_update.password)
+        if user_update.is_active is not None:
+            update_data["is_active"] = user_update.is_active
+        
+        update_data["updated_at"] = get_current_timestamp()
+        
+        # Update user
+        result = users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=400, detail="No changes made")
+        
+        # Log the update
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",
+            "action": "USER_UPDATED",
+            "details": f"User '{user_id}' updated",
+            "level": "INFO",
+            "timestamp": get_current_timestamp()
+        }
+        logs_collection.insert_one(log_data)
+        
+        # Return updated user data
+        updated_user = users_collection.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
+        logger.info(f"User updated: {user_id}")
+        return updated_user
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update user: {str(e)}")
+
+@api_router.delete("/users/{user_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_user(user_id: str):
+    """Delete a user (soft delete by setting is_active to False)"""
+    try:
+        # Check if user exists
+        existing_user = users_collection.find_one({"user_id": user_id})
+        if not existing_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Soft delete by setting is_active to False
+        result = users_collection.update_one(
+            {"user_id": user_id},
+            {"$set": {"is_active": False, "updated_at": get_current_timestamp()}}
+        )
+        
+        # Log the deletion
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",
+            "action": "USER_DELETED",
+            "details": f"User '{user_id}' deactivated",
+            "level": "WARNING",
+            "timestamp": get_current_timestamp()
+        }
+        logs_collection.insert_one(log_data)
+        
+        logger.info(f"User deactivated: {user_id}")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting user {user_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete user: {str(e)}")
+
 # LangGraph Integration
 @api_router.post("/langgraph/analyze", response_model=LangGraphResponse, status_code=status.HTTP_200_OK)
 async def analyze_prd_with_langgraph(request: LangGraphRequest):
@@ -988,7 +1246,7 @@ async def analyze_prd_with_langgraph(request: LangGraphRequest):
                 "level": "INFO",
                 "timestamp": get_current_timestamp()
             }
-            logs_collection.insert_one(log_data)
+            # logs_collection.insert_one(log_data)
             
             logger.info(f"✅ LangGraph analysis completed for: {request.name}")
             logger.info(f"📊 Risk Level: {langgraph_result.get('overall_risk_level', 'unknown').upper()}")
@@ -1030,7 +1288,8 @@ async def health_check():
                 "collections": {
                     "PRD": prd_collection.count_documents({}),
                     "feature_data": feature_data_collection.count_documents({}),
-                    "logs": logs_collection.count_documents({})
+                    "logs": logs_collection.count_documents({}),
+                    "users": users_collection.count_documents({})
                 },
                 "features_per_prd": {
                     "total_features": feature_data_collection.count_documents({}),
@@ -1047,7 +1306,8 @@ async def health_check():
                 "collections": {
                     "PRD": prd_collection.count_documents({}),
                     "feature_data": feature_data_collection.count_documents({}),
-                    "logs": logs_collection.count_documents({})
+                    "logs": logs_collection.count_documents({}),
+                    "users": users_collection.count_documents({})
                 },
                 "features_per_prd": {
                     "total_features": feature_data_collection.count_documents({}),
@@ -1069,7 +1329,7 @@ async def root():
         "port": 5000,
         "database": "connected" if MONGODB_CONNECTED else "offline",
         "mode": "production" if MONGODB_CONNECTED else "mock_data",
-        "collections": ["PRD", "feature_data", "logs"],
+        "collections": ["PRD", "feature_data", "logs", "users"],
         "docs": "/docs",
         "note": "Data persistence available" if MONGODB_CONNECTED else "Running in offline mode - data not persisted"
     }
