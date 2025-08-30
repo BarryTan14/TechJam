@@ -121,9 +121,8 @@ export default function Dashboard() {
                 height: 12,
                 borderRadius: '50%',
                 backgroundColor: 
-                    option.priority === 'High' ? 'red' :
-                    option.priority === 'Medium' ? 'orange' :
-                    option.priority === 'Low' ? 'green' :
+                    mapData.filter(state => state.value > 0.4).length > 0  ? 'red' :
+                    mapData.filter(state => state.value > 0.4).length == 0  ? 'green' :
                     'gray', // default color for undefined priority
                 }}
             />
@@ -162,11 +161,11 @@ export default function Dashboard() {
             >
             <Row style={{fontWeight:500}} justify="space-evenly">
                 <Col span={11}>
-                    <b>Description</b>:<br />
+                    <div style={{marginTop: "5px", marginBottom:"5px"}}><b>Description</b>:</div><br />
                     <div>{selectedFeature?.feature.feature_description ?? ""}</div>
                 </Col>
                 <Col span={11} style={{marginLeft: "auto"}} >
-                    <div style={{textAlign:"center", fontSize:"16px"}}>States Compliance</div>
+                    <div style={{textAlign:"center", fontSize:"16px", marginTop: "5px", marginBottom:"5px"}}>States Compliance</div>
                     <Row justify={"center"}>
                         <Col span={10} style={{textAlign:"center"}}>
                             <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '90%', fontSize: "12px" }}>

@@ -99,7 +99,7 @@ const ModalForm: React.FC<ModalFormProps> = ({ form, isEdit = false, initialValu
               placeholder="Please enter description" 
             />
           </Form.Item>
-          <Form.Item
+          {/* <Form.Item
             name="Status"
             label="Status"
             rules={[{ required: true, message: 'Please select the PRD status!' }]}
@@ -107,7 +107,7 @@ const ModalForm: React.FC<ModalFormProps> = ({ form, isEdit = false, initialValu
             <Input 
               placeholder="Enter status (e.g., Draft, Review, Approved)" 
             />
-          </Form.Item>
+          </Form.Item> */}
     </Form>
   )
 }
@@ -154,7 +154,7 @@ export default function App() {
             form.setFieldsValue({
                 Name: prd.Name,
                 Description: prd.Description,
-                Status: prd.Status
+                Status: "Draft"
             });
         } else {
             setIsEdit(false);
@@ -165,10 +165,10 @@ export default function App() {
     };
 
   const onCloseModal = () => {
-    setOpenModal(false);
-        setIsEdit(false);
-        setCurrentPrd(null);
-        form.resetFields();
+      form.resetFields();
+      setCurrentPrd(null);
+      setOpenModal(false);
+      setIsEdit(false);
     };
 
     const handleSubmit = async () => {
@@ -243,7 +243,6 @@ export default function App() {
                 <ModalForm 
                     form={form} 
                     isEdit={isEdit} 
-                    initialValues={currentPrd || {}}
                 />
             </Modal>
             <Table 
