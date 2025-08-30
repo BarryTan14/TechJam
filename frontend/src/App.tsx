@@ -1,5 +1,5 @@
-import { Table, Button, Popconfirm, Row, Modal, Form, Input, message, Descriptions, Upload, Radio, Space } from "antd";
-import { DeleteOutlined, EditOutlined, UploadOutlined } from '@ant-design/icons';
+import { Table, Button, Popconfirm, Row, Modal, Form, Input, message } from "antd";
+import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from "react";
 import { fetchPrd, createPrd, createPrdFromFile, deletePrd, updatePrd } from "./api";
@@ -301,7 +301,7 @@ export default function App() {
             </div>
             <div>
               {/* <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button> */}
-              <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
+              {/*<Button onClick={() => navigate('/featureLogs')}>View Logs</Button>*/}
             </div>
             <Row justify="end" style={{marginBottom: "10px"}}>
               <Button title="Add new PRD" onClick={() => showModal()}>Add New PRD</Button>

@@ -11,6 +11,7 @@ from bson import ObjectId
 import logging
 import os
 import httpx
+import re
 from dotenv import load_dotenv
 import bcrypt
 
@@ -45,6 +46,7 @@ if uri:
         feature_data_collection = db["feature_data"]
         logs_collection = db["logs"]
         users_collection = db["users"]
+        terminology_collection = db["terminology"]
         
         # Create indexes for better performance
         prd_collection.create_index("ID", unique=True)
@@ -52,6 +54,7 @@ if uri:
         feature_data_collection.create_index("prd_uuid")
         logs_collection.create_index("prd_uuid")
         users_collection.create_index("username", unique=True)
+        terminology_collection.create_index("term", unique=True)
         
         MONGODB_CONNECTED = True
         print("✅ MongoDB collections initialized successfully!")
@@ -69,6 +72,7 @@ if uri:
         feature_data_collection = None
         logs_collection = None
         users_collection = None
+        terminology_collection = None
 else:
     print("⚠️  Running in offline mode - API will work but data won't be persisted")
     MONGODB_CONNECTED = False
@@ -92,23 +96,80 @@ else:
         
         def find_one(self, query):
             for doc in self.data:
-                if all(doc.get(k) == v for k, v in query.items()):
+                if self._matches_query(doc, query):
                     return doc
             return None
         
+        def _matches_query(self, doc, query):
+            """Helper method to check if a document matches a MongoDB-style query"""
+            for key, value in query.items():
+                if key == "$or":
+                    # Handle $or operator
+                    if not any(self._matches_query(doc, or_query) for or_query in value):
+                        return False
+                elif key == "$regex":
+                    # Handle $regex operator (for string matching)
+                    if not isinstance(doc, str) or not re.search(value, doc, re.IGNORECASE):
+                        return False
+                elif key == "$options":
+                    # Skip $options as it's handled by $regex
+                    continue
+                elif isinstance(value, dict) and "$regex" in value:
+                    # Handle field with regex
+                    regex_pattern = value["$regex"]
+                    options = value.get("$options", "")
+                    flags = re.IGNORECASE if "i" in options else 0
+                    if not re.search(regex_pattern, str(doc.get(key, "")), flags):
+                        return False
+                elif isinstance(value, dict) and "$ne" in value:
+                    # Handle $ne (not equal) operator
+                    if doc.get(key) == value["$ne"]:
+                        return False
+                elif isinstance(value, dict) and "$exists" in value:
+                    # Handle $exists operator
+                    exists = key in doc
+                    if value["$exists"] != exists:
+                        return False
+                else:
+                    # Simple equality check
+                    if doc.get(key) != value:
+                        return False
+            return True
+        
         def find(self, query=None, projection=None):
             if query is None:
-                return self.data
-            # Simple mock filtering
+                query = {}
+            
+            # Filter documents based on query
             filtered = []
             for doc in self.data:
-                if all(doc.get(k) == v for k, v in query.items()):
+                if self._matches_query(doc, query):
                     filtered.append(doc)
-            return filtered
+            
+            # Return a mock cursor-like object that supports chaining
+            class MockCursor:
+                def __init__(self, data):
+                    self.data = data
+                
+                def sort(self, field, direction=1):
+                    # Sort the data
+                    if field == "term":
+                        self.data.sort(key=lambda x: x.get(field, ""), reverse=(direction == -1))
+                    elif field == "timestamp":
+                        self.data.sort(key=lambda x: x.get(field, 0), reverse=(direction == -1))
+                    return self
+                
+                def __iter__(self):
+                    return iter(self.data)
+                
+                def __len__(self):
+                    return len(self.data)
+            
+            return MockCursor(filtered)
         
         def update_one(self, query, update):
             for i, doc in enumerate(self.data):
-                if all(doc.get(k) == v for k, v in query.items()):
+                if self._matches_query(doc, query):
                     if '$set' in update:
                         for key, value in update['$set'].items():
                             doc[key] = value
@@ -117,7 +178,7 @@ else:
         
         def delete_one(self, query):
             for i, doc in enumerate(self.data):
-                if all(doc.get(k) == v for k, v in query.items()):
+                if self._matches_query(doc, query):
                     del self.data[i]
                     return type('MockResult', (), {'deleted_count': 1})()
             return type('MockResult', (), {'deleted_count': 0})()
@@ -126,7 +187,7 @@ else:
             deleted_count = 0
             indices_to_delete = []
             for i, doc in enumerate(self.data):
-                if all(doc.get(k) == v for k, v in query.items()):
+                if self._matches_query(doc, query):
                     indices_to_delete.append(i)
                     deleted_count += 1
             
@@ -141,7 +202,7 @@ else:
                 return len(self.data)
             count = 0
             for doc in self.data:
-                if all(doc.get(k) == v for k, v in query.items()):
+                if self._matches_query(doc, query):
                     count += 1
             return count
         
@@ -155,12 +216,27 @@ else:
         def create_index(self, field, **kwargs):
             # Mock index creation
             pass
+        
+        def distinct(self, field, query=None):
+            # Mock distinct method
+            if query is None:
+                query = {}
+            
+            distinct_values = set()
+            for doc in self.data:
+                # Check if document matches query
+                if self._matches_query(doc, query):
+                    if field in doc:
+                        distinct_values.add(doc[field])
+            
+            return list(distinct_values)
     
     # Initialize mock collections
     prd_collection = MockCollection("PRD")
     feature_data_collection = MockCollection("feature_data")
     logs_collection = MockCollection("logs")
     users_collection = MockCollection("users")
+    terminology_collection = MockCollection("terminology")
 
 # Data migration function
 def migrate_existing_data():
@@ -334,7 +410,22 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     is_active: Optional[bool] = None
 
+# Terminology Models
+class TerminologyBase(BaseModel):
+    term: str = Field(..., description="Terminology term", min_length=1, max_length=100)
+    description: str = Field(..., description="Description of the term", min_length=1, max_length=1000)
 
+class TerminologyCreate(TerminologyBase):
+    pass
+
+class TerminologyUpdate(BaseModel):
+    term: Optional[str] = Field(None, description="Terminology term", min_length=1, max_length=100)
+    description: Optional[str] = Field(None, description="Description of the term", min_length=1, max_length=1000)
+
+class TerminologyResponse(TerminologyBase):
+    term_id: Optional[str] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
 
 # Create API router
 api_router = APIRouter(prefix="/api")
@@ -500,7 +591,7 @@ async def create_prd(prd: PRDCreate):
                         "level": "ERROR",
                         "timestamp": current_time
                     }
-                    logs_collection.insert_one(error_log_data)
+                    # logs_collection.insert_one(error_log_data)
                     
                     logger.error(f"❌ LangGraph API error: {response.status_code} - {response.text}")
                     
@@ -514,7 +605,7 @@ async def create_prd(prd: PRDCreate):
                 "level": "WARNING",
                 "timestamp": current_time
             }
-            logs_collection.insert_one(timeout_log_data)
+            # logs_collection.insert_one(timeout_log_data)
             
             logger.warning(f"⏰ LangGraph analysis timed out for PRD: {prd.Name}")
             
@@ -528,7 +619,7 @@ async def create_prd(prd: PRDCreate):
                 "level": "WARNING",
                 "timestamp": current_time
             }
-            logs_collection.insert_one(connection_log_data)
+            # logs_collection.insert_one(connection_log_data)
             
             logger.warning(f"🔌 Cannot connect to LangGraph API for PRD: {prd.Name}")
             
@@ -542,7 +633,7 @@ async def create_prd(prd: PRDCreate):
                 "level": "ERROR",
                 "timestamp": current_time
             }
-            logs_collection.insert_one(error_log_data)
+            # logs_collection.insert_one(error_log_data)
             
             logger.error(f"❌ LangGraph analysis error for PRD {prd.Name}: {e}")
         
@@ -782,7 +873,20 @@ async def get_prd(prd_id: str):
             raise HTTPException(status_code=404, detail="PRD not found")
         
         # Ensure PRD has required timestamp fields
-        ensure_timestamps(prd)
+        # ensure_timestamps(prd)
+
+        # current_time = get_current_timestamp()
+        # log_data = {
+        #     "uuid": generate_uuid(),
+        #     "prd_uuid": prd_id,
+        #     "action": "RETRIEVE",
+        #     "details": f"PRD '{prd['Name']}' retrieved",
+        #     "level": "INFO",
+        #     "timestamp": current_time
+        # }
+        # logger.info(f"Logging retrieval of PRD: {prd_id.Name}")
+        # logs_collection.insert_one(log_data)
+
         
         logger.info(f"Retrieved PRD: {prd_id}")
         return prd
@@ -820,6 +924,18 @@ async def get_prd_dashboard(prd_id: str):
             "features_with_low_risk": len([f for f in features if f.get('data', {}).get('risk_level') == 'low'])
         }
         
+        # Log the dashboard retrieval with PRD name
+        current_time = get_current_timestamp()
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": prd_id,
+            "action": "RETREIVED",
+            "details": f"PRD '{prd['Name']}' dashboard viewed",
+            "level": "INFO",
+            "timestamp": current_time
+        }
+        logs_collection.insert_one(log_data)
+
         logger.info(f"Dashboard data retrieved for PRD: {prd_id} with {len(features)} features")
         return dashboard_data
         
@@ -1239,7 +1355,7 @@ async def create_user(user: UserCreate):
             "level": "INFO",
             "timestamp": current_time
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"User created: {user_id} ({user.username})")
         
@@ -1286,7 +1402,7 @@ async def login_user(user_credentials: UserLogin):
             "level": "INFO",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"User logged in: {user['username']}")
         
@@ -1377,7 +1493,7 @@ async def update_user(user_id: str, user_update: UserUpdate):
             "level": "INFO",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         # Return updated user data
         updated_user = users_collection.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0})
@@ -1414,7 +1530,7 @@ async def delete_user(user_id: str):
             "level": "WARNING",
             "timestamp": get_current_timestamp()
         }
-        logs_collection.insert_one(log_data)
+        # logs_collection.insert_one(log_data)
         
         logger.info(f"User deactivated: {user_id}")
         
@@ -1500,6 +1616,230 @@ async def analyze_prd_with_langgraph(request: LangGraphRequest):
             detail=f"Failed to analyze PRD with LangGraph: {str(e)}"
         )
 
+# Terminology CRUD Operations
+@api_router.post("/terminology", response_model=TerminologyResponse, status_code=status.HTTP_201_CREATED)
+async def create_terminology(terminology: TerminologyCreate):
+    """Create a new terminology entry"""
+    try:
+        # Check if term already exists
+        existing_term = terminology_collection.find_one({"term": terminology.term})
+        if existing_term:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Term '{terminology.term}' already exists"
+            )
+        
+        # Generate unique ID and timestamps
+        term_id = generate_uuid()
+        current_time = get_current_timestamp()
+        
+        terminology_data = {
+            "term_id": term_id,
+            "term": terminology.term,
+            "description": terminology.description
+        }
+        
+        # Save to database
+        result = terminology_collection.insert_one(terminology_data)
+        
+        # Log the creation
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",
+            "action": "TERMINOLOGY_CREATED",
+            "details": f"Terminology '{terminology.term}' created",
+            "level": "INFO",
+            "timestamp": current_time
+        }
+        # logs_collection.insert_one(log_data)
+        
+        logger.info(f"Terminology created: {terminology.term}")
+        
+        return TerminologyResponse(**terminology_data)
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error creating terminology {terminology.term}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create terminology: {str(e)}")
+
+@api_router.get("/terminology", response_model=List[TerminologyResponse])
+async def get_all_terminology():
+    """Get all terminology entries"""
+    try:
+        terminology_cursor = terminology_collection.find().sort("term", 1)
+        terminology_list = list(terminology_cursor)
+        
+        # Convert ObjectId to string for JSON serialization
+        for term in terminology_list:
+            if "_id" in term:
+                del term["_id"]
+            # Remove null timestamp fields to keep response clean
+        
+        logger.info(f"Retrieved {len(terminology_list)} terminology entries")
+        return terminology_list
+        
+    except Exception as e:
+        logger.error(f"Error retrieving terminology: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve terminology: {str(e)}")
+
+@api_router.get("/terminology/{term_id}", response_model=TerminologyResponse)
+async def get_terminology_by_id(term_id: str):
+    """Get a specific terminology entry by ID"""
+    try:
+        terminology = terminology_collection.find_one({"term_id": term_id})
+        
+        if not terminology:
+            raise HTTPException(status_code=404, detail="Terminology not found")
+        
+        # Remove ObjectId for JSON serialization
+        if "_id" in terminology:
+            del terminology["_id"]
+        # Remove null timestamp fields to keep response clean
+        if terminology.get("created_at") is None:
+            del terminology["created_at"]
+        if terminology.get("updated_at") is None:
+            del terminology["updated_at"]
+        
+        logger.info(f"Retrieved terminology: {terminology['term']}")
+        return terminology
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving terminology {term_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve terminology: {str(e)}")
+
+@api_router.get("/terminology/search/{search_term}", response_model=List[TerminologyResponse])
+async def search_terminology(search_term: str):
+    """Search terminology by term or explanation"""
+    try:
+        # Create a case-insensitive search query
+        search_query = {
+            "$or": [
+                {"term": {"$regex": search_term, "$options": "i"}},
+                {"description": {"$regex": search_term, "$options": "i"}}
+            ]
+        }
+        
+        terminology_cursor = terminology_collection.find(search_query).sort("term", 1)
+        terminology_list = list(terminology_cursor)
+        
+        # Convert ObjectId to string for JSON serialization and ensure required fields
+        for term in terminology_list:
+            if "_id" in term:
+                del term["_id"]
+            # Ensure term_id exists (use _id if available, otherwise generate one)
+            if "term_id" not in term:
+                term["term_id"] = str(term.get("_id", "")) if term.get("_id") else "unknown"
+        
+        logger.info(f"Search for '{search_term}' returned {len(terminology_list)} results")
+        return terminology_list
+        
+    except Exception as e:
+        logger.error(f"Error searching terminology for '{search_term}': {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to search terminology: {str(e)}")
+
+@api_router.put("/terminology/{term_id}", response_model=TerminologyResponse)
+async def update_terminology(term_id: str, terminology: TerminologyUpdate):
+    """Update a terminology entry"""
+    try:
+        # Check if terminology exists
+        existing_term = terminology_collection.find_one({"term_id": term_id})
+        if not existing_term:
+            raise HTTPException(status_code=404, detail="Terminology not found")
+        
+        # Check if new term name conflicts with existing terms (excluding current one)
+        if terminology.term and terminology.term != existing_term["term"]:
+            conflicting_term = terminology_collection.find_one({
+                "term": terminology.term,
+                "term_id": {"$ne": term_id}
+            })
+            if conflicting_term:
+                raise HTTPException(
+                    status_code=400, 
+                    detail=f"Term '{terminology.term}' already exists"
+                )
+        
+        # Prepare update data
+        update_data = {"updated_at": get_current_timestamp()}
+        if terminology.term is not None:
+            update_data["term"] = terminology.term
+        if terminology.description is not None:
+            update_data["description"] = terminology.description
+        
+        # Update in database
+        result = terminology_collection.update_one(
+            {"term_id": term_id},
+            {"$set": update_data}
+        )
+        
+        if result.modified_count == 0:
+            raise HTTPException(status_code=400, detail="No changes made")
+        
+        # Get updated terminology
+        updated_term = terminology_collection.find_one({"term_id": term_id})
+        
+        # Log the update
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",
+            "action": "TERMINOLOGY_UPDATED",
+            "details": f"Terminology '{updated_term['term']}' updated",
+            "level": "INFO",
+            "timestamp": get_current_timestamp()
+        }
+        # logs_collection.insert_one(log_data)
+        
+        # Remove ObjectId for JSON serialization
+        if "_id" in updated_term:
+            del updated_term["_id"]
+        
+        logger.info(f"Terminology updated: {updated_term['term']}")
+        return updated_term
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error updating terminology {term_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to update terminology: {str(e)}")
+
+@api_router.delete("/terminology/{term_id}")
+async def delete_terminology(term_id: str):
+    """Delete a terminology entry"""
+    try:
+        # Check if terminology exists
+        existing_term = terminology_collection.find_one({"term_id": term_id})
+        if not existing_term:
+            raise HTTPException(status_code=404, detail="Terminology not found")
+        
+        # Delete from database
+        result = terminology_collection.delete_one({"term_id": term_id})
+        
+        if result.deleted_count == 0:
+            raise HTTPException(status_code=400, detail="Failed to delete terminology")
+        
+        # Log the deletion
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": "SYSTEM",
+            "action": "TERMINOLOGY_DELETED",
+            "details": f"Terminology '{existing_term['term']}' deleted",
+            "level": "WARNING",
+            "timestamp": get_current_timestamp()
+        }
+        # logs_collection.insert_one(log_data)
+        
+        logger.info(f"Terminology deleted: {existing_term['term']}")
+        
+        return {"message": f"Terminology '{existing_term['term']}' deleted successfully"}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error deleting terminology {term_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to delete terminology: {str(e)}")
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -1516,7 +1856,8 @@ async def health_check():
                     "PRD": prd_collection.count_documents({}),
                     "feature_data": feature_data_collection.count_documents({}),
                     "logs": logs_collection.count_documents({}),
-                    "users": users_collection.count_documents({})
+                    "users": users_collection.count_documents({}),
+                    "terminology": terminology_collection.count_documents({})
                 },
                 "features_per_prd": {
                     "total_features": feature_data_collection.count_documents({}),
@@ -1534,7 +1875,8 @@ async def health_check():
                     "PRD": prd_collection.count_documents({}),
                     "feature_data": feature_data_collection.count_documents({}),
                     "logs": logs_collection.count_documents({}),
-                    "users": users_collection.count_documents({})
+                    "users": users_collection.count_documents({}),
+                    "terminology": terminology_collection.count_documents({})
                 },
                 "features_per_prd": {
                     "total_features": feature_data_collection.count_documents({}),
@@ -1556,7 +1898,7 @@ async def root():
         "port": 5000,
         "database": "connected" if MONGODB_CONNECTED else "offline",
         "mode": "production" if MONGODB_CONNECTED else "mock_data",
-        "collections": ["PRD", "feature_data", "logs", "users"],
+        "collections": ["PRD", "feature_data", "logs", "users", "terminology"],
         "docs": "/docs",
         "note": "Data persistence available" if MONGODB_CONNECTED else "Running in offline mode - data not persisted"
     }
