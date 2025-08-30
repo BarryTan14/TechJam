@@ -103,6 +103,36 @@
     border-color: #40a9ff;
 }
 
+/* CSV Export Button styling */
+.csv-export-btn {
+    background-color: #52c41a !important;
+    border-color: #52c41a !important;
+    color: white !important;
+    font-weight: 500;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(82, 196, 26, 0.2);
+}
+
+.csv-export-btn:hover {
+    background-color: #73d13d !important;
+    border-color: #73d13d !important;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(82, 196, 26, 0.3);
+}
+
+.csv-export-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(82, 196, 26, 0.2);
+}
+
+.csv-export-btn .anticon {
+    font-size: 16px;
+}
+
 /* Breadcrumb styling */
 .ant-breadcrumb {
     font-size: 14px;

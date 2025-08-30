@@ -1,7 +1,7 @@
 import { Button, Table, Card, Row, Col, Spin, message, Breadcrumb } from "antd";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useState, useEffect } from "react";
-import { HomeOutlined, DashboardOutlined, FileTextOutlined } from '@ant-design/icons';
+import { HomeOutlined, DashboardOutlined, FileTextOutlined, DownloadOutlined } from '@ant-design/icons';
 import './featureLogs.css';
 
 const signOut = () => {
@@ -106,6 +106,68 @@ export default function FeatureLogs() {
         return baseColumns;
     };
 
+    // CSV Export function
+    const exportToCSV = () => {
+        if (logs.length === 0) {
+            message.warning('No data to export');
+            return;
+        }
+
+        try {
+            // Get the current columns based on context
+            const columns = getTableColumns();
+            
+            // Create CSV header
+            const headers = columns.map(col => col.title).join(',');
+            
+            // Create CSV rows
+            const csvRows = logs.map((log: any) => {
+                const row = columns.map(col => {
+                    let value = log[col.dataIndex];
+                    
+                    // Format timestamp if it exists
+                    if (col.dataIndex === 'timestamp' && value) {
+                        value = new Date(value).toLocaleString();
+                    }
+                    
+                    // Handle special characters and wrap in quotes if needed
+                    if (typeof value === 'string' && (value.includes(',') || value.includes('"') || value.includes('\n'))) {
+                        value = `"${value.replace(/"/g, '""')}"`;
+                    }
+                    
+                    return value || 'N/A';
+                });
+                return row.join(',');
+            });
+            
+            // Combine header and rows
+            const csvContent = [headers, ...csvRows].join('\n');
+            
+            // Create and download file
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            // Generate filename based on context
+            const timestamp = new Date().toISOString().split('T')[0];
+            const filename = prdId 
+                ? `feature_logs_${prdInfo?.Name || prdId}_${timestamp}.csv`
+                : `all_feature_logs_${timestamp}.csv`;
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', filename);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            message.success('CSV exported successfully');
+        } catch (error) {
+            console.error('Error exporting CSV:', error);
+            message.error('Failed to export CSV');
+        }
+    };
+
     // Fetch logs based on whether prdId is provided
     useEffect(() => {
         const fetchLogs = async () => {
@@ -206,7 +268,7 @@ export default function FeatureLogs() {
             )}
 
             {/* Navigation Buttons */}
-            <div style={{ marginBottom: 16, display: 'flex', gap: 8 }}>
+            <div style={{ marginBottom: 16, display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
                 {prdId && (
                     <Button 
@@ -216,6 +278,19 @@ export default function FeatureLogs() {
                         ← Back to PRD Dashboard
                     </Button>
                 )}
+                
+                {/* CSV Export Button */}
+                <Button 
+                    type="default"
+                    icon={<DownloadOutlined />}
+                    onClick={exportToCSV}
+                    className="csv-export-btn"
+                    style={{
+                        marginLeft: 'auto'
+                    }}
+                >
+                    Export to CSV
+                </Button>
             </div>
 
             {/* Logs Table */}

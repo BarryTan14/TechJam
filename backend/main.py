@@ -702,7 +702,7 @@ async def get_prd_dashboard(prd_id: str):
         log_data = {
             "uuid": generate_uuid(),
             "prd_uuid": prd_id,
-            "action": "RETREIVED",
+            "action": "RETRIEVED",
             "details": f"PRD '{prd['Name']}' dashboard viewed",
             "level": "INFO",
             "timestamp": current_time
