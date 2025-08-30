@@ -1,10 +1,11 @@
 """
-PRD Parser Agent - Extracts features from PRD documents with RAG capabilities
+PRD Parser Agent - Parses PRD documents and extracts features
 """
 
 import json
-from datetime import datetime
-from typing import Dict, Any, List, Optional
+import re
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, List
 import pymongo
 from pymongo import MongoClient
 from pymongo.cursor import Cursor
@@ -16,6 +17,12 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(
 from mongodb_config import MONGO_URI, DATABASE_NAME, COLLECTION_NAME, CONNECTION_TIMEOUT_MS, SERVER_SELECTION_TIMEOUT_MS
 
 from .models import AgentOutput, ExtractedFeature
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 
 class PRDParserAgent:
@@ -143,7 +150,6 @@ class PRDParserAgent:
             List of potential terms to search for
         """
         # Common patterns for technical terms
-        import re
         
         # Extract acronyms (2-4 capital letters)
         acronyms = re.findall(r'\b[A-Z]{2,4}\b', content)
@@ -166,7 +172,7 @@ class PRDParserAgent:
     
     def parse_prd(self, prd_name: str, prd_description: str, prd_content: str) -> AgentOutput:
         """Parse PRD and extract features with RAG augmentation"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         
         # Base prompt with optimized feature classification
         base_prompt = f"""You are an AI assistant that identifies and classifies "features" in give input.
@@ -247,7 +253,7 @@ IMPORTANT GUIDELINES:
             raise Exception("No LLM available for PRD parsing")
         
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         # Create agent output
         agent_output = AgentOutput(
@@ -262,7 +268,7 @@ IMPORTANT GUIDELINES:
             analysis_result=analysis_result,
             confidence_score=0.9,
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
         
         return agent_output
@@ -271,7 +277,6 @@ IMPORTANT GUIDELINES:
     
     def _extract_json_from_response(self, response_text: str) -> Dict[str, Any]:
         """Extract JSON from LLM response text"""
-        import re
         
         if not response_text or not response_text.strip():
             raise Exception("LLM response is empty")

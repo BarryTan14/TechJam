@@ -4,7 +4,7 @@ from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional
 import logging
 import os
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 import json
 from dotenv import load_dotenv
 
@@ -14,6 +14,12 @@ load_dotenv()
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 # Import the workflow
 from langgraph_workflow import ComplianceWorkflow, WorkflowState
@@ -124,13 +130,13 @@ async def analyze_prd(request: PRDRequest):
         
         # Create PRD data for workflow
         prd_data = {
-            "prd_id": f"prd_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+            "prd_id": f"prd_{get_singapore_time().strftime('%Y%m%d_%H%M%S')}",
             "prd_name": request.name,
             "prd_description": request.description,
             "prd_content": request.content,
             "metadata": {
                 "document_type": "product_requirements",
-                "analysis_date": datetime.now().isoformat(),
+                "analysis_date": get_singapore_time().isoformat(),
                 "word_count": len(request.content.split()),
                 "source": "api_request"
             }
@@ -192,7 +198,7 @@ async def health_check():
         return {
             "status": "healthy",
             "workflow_initialized": workflow is not None,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": get_singapore_time().isoformat(),
             "service": "LangGraph Compliance Workflow API"
         }
     except Exception as e:

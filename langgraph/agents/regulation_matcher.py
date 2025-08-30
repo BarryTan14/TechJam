@@ -3,9 +3,15 @@ Regulation Matcher Agent - Matches features to relevant regulations
 """
 
 import json
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, List
 from .models import AgentOutput
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 
 class RegulationMatcherAgent:
@@ -16,7 +22,7 @@ class RegulationMatcherAgent:
     
     def match_regulations(self, feature_name: str, feature_analysis: Dict[str, Any]) -> AgentOutput:
         """Match feature analysis to applicable regulations"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         
         # Optimized prompt - more concise and focused
         prompt = f"""Match this feature to regulations:
@@ -64,7 +70,7 @@ Return JSON:
             raise Exception("No LLM available for regulation matching")
         
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         # Create agent output
         agent_output = AgentOutput(
@@ -74,7 +80,7 @@ Return JSON:
             analysis_result=analysis_result,
             confidence_score=0.80 if self.llm else 0.60,
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
         
         return agent_output

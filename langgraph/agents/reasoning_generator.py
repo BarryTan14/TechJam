@@ -1,11 +1,17 @@
 """
-Reasoning Generator Agent - Produces clear justifications for compliance decisions
+Reasoning Generator Agent - Generates detailed reasoning for compliance decisions
 """
 
 import json
-from datetime import datetime
-from typing import Dict, Any
+from datetime import datetime, timezone, timedelta
+from typing import Dict, Any, List
 from .models import AgentOutput
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 
 class ReasoningGeneratorAgent:
@@ -17,7 +23,7 @@ class ReasoningGeneratorAgent:
     def generate_reasoning(self, feature_name: str, feature_analysis: Dict[str, Any], 
                           regulation_matching: Dict[str, Any], risk_assessment: Dict[str, Any]) -> AgentOutput:
         """Generate clear reasoning based on all previous analyses"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         
         print(f"\n💭 [Reasoning Generator] Generating reasoning for: {feature_name}")
         
@@ -107,7 +113,7 @@ class ReasoningGeneratorAgent:
             raise Exception("No LLM available for reasoning generation")
         
         # Calculate processing time
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         # Create agent output
         agent_output = AgentOutput(
@@ -121,7 +127,7 @@ class ReasoningGeneratorAgent:
             analysis_result=analysis_result,
             confidence_score=0.90 if self.llm else 0.70,
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
         
         print(f"✅ [Reasoning Generator] Completed in {processing_time:.2f}s")

@@ -1,13 +1,19 @@
 import os
 import json
 import logging
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from typing import Dict, Any, List, Optional
 from dataclasses import dataclass, asdict
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Helper function for Singapore timezone
+def get_singapore_time():
+    """Get current time in Singapore timezone (UTC+8)"""
+    singapore_tz = timezone(timedelta(hours=8))
+    return datetime.now(singapore_tz)
 
 # Load environment variables from .env file
 from dotenv import load_dotenv
@@ -90,9 +96,9 @@ class WorkflowState:
         if self.summary_recommendations is None:
             self.summary_recommendations = []
         if not self.workflow_id:
-            self.workflow_id = f"workflow_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+            self.workflow_id = f"workflow_{get_singapore_time().strftime('%Y%m%d_%H%M%S')}"
         if not self.start_time:
-            self.start_time = datetime.now().isoformat()
+            self.start_time = get_singapore_time().isoformat()
 
 class ComplianceWorkflow:
     """Main workflow orchestrator"""
@@ -200,7 +206,7 @@ class ComplianceWorkflow:
     
     def analyze_single_feature(self, feature: ExtractedFeature) -> FeatureComplianceResult:
         """Analyze a single feature through all agents - optimized"""
-        start_time = datetime.now()
+        start_time = get_singapore_time()
         agent_outputs = {}
         
         try:
@@ -338,7 +344,7 @@ class ComplianceWorkflow:
             print(f"⚠️  Error in feature analysis: {e}")
             raise Exception(f"Feature analysis failed: {e}")
         
-        processing_time = (datetime.now() - start_time).total_seconds()
+        processing_time = (get_singapore_time() - start_time).total_seconds()
         
         return FeatureComplianceResult(
             feature=feature,
@@ -354,7 +360,7 @@ class ComplianceWorkflow:
             state_compliance_scores=state_compliance_scores_dict,
             cultural_sensitivity_scores=cultural_sensitivity_scores,
             processing_time=processing_time,
-            timestamp=datetime.now().isoformat()
+            timestamp=get_singapore_time().isoformat()
         )
     
     def run_workflow(self, prd_data: Dict[str, Any]) -> WorkflowState:
@@ -526,8 +532,8 @@ class ComplianceWorkflow:
             non_compliant_states_analysis = self.non_compliant_states_analyzer.analyze_non_compliant_states(state.feature_compliance_results)
             state.non_compliant_states_dict = non_compliant_states_analysis.analysis_result.get("non_compliant_states_dict", {})
         
-        state.end_time = datetime.now().isoformat()
-        state.total_processing_time = (datetime.now() - datetime.fromisoformat(state.start_time)).total_seconds()
+        state.end_time = get_singapore_time().isoformat()
+        state.total_processing_time = (get_singapore_time() - datetime.fromisoformat(state.start_time)).total_seconds()
     
     def _generate_cultural_sensitivity_analysis(self, state: WorkflowState) -> Dict[str, Any]:
         """Generate overall cultural sensitivity analysis from feature results"""
@@ -934,7 +940,7 @@ class ComplianceWorkflow:
                     non_compliant_states=non_compliant_states,
                     state_compliance_scores=state_compliance_scores,
                     processing_time=0.0,  # Will be calculated
-                    timestamp=datetime.now().isoformat()
+                    timestamp=get_singapore_time().isoformat()
                 )
                 
                 feature_results.append(feature_result)
@@ -1021,13 +1027,13 @@ def main():
     
     # Create PRD data
     prd_data = {
-        "prd_id": f"prd_{datetime.now().strftime('%Y%m%d_%H%M%S')}",
+        "prd_id": f"prd_{get_singapore_time().strftime('%Y%m%d_%H%M%S')}",
         "prd_name": prd_name,
         "prd_description": prd_description,
         "prd_content": prd_content,
         "metadata": {
             "document_type": "product_requirements",
-            "analysis_date": datetime.now().isoformat(),
+            "analysis_date": get_singapore_time().isoformat(),
             "word_count": len(prd_content.split())
         }
     }

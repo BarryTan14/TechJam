@@ -27,6 +27,9 @@ export default function Dashboard() {
     const [featureOptions, setFeatureOptions] = useState<any[]>([]);
     const [allFeatues, setAllFeatures] = useState<any[]>([])
     const [mapData, setMapData] = useState<any[]>([])
+    const [openStateModal, setOpenStateModal] = useState(false)
+    const [stateModalData, setStateModalData] = useState(null)
+
 
     const showModal = (value: SetStateAction<string>) => {
         setOpenModal(true);
@@ -37,6 +40,15 @@ export default function Dashboard() {
         setOpenModal(false);
         setButtonValue("")
     };
+
+    const showStateModal = (feature: any) => {
+        setOpenStateModal(true)
+        setStateModalData(feature)
+    }
+
+    const closeStateModal = () => {
+        setOpenStateModal(false)
+    }
 
     const navigate = useNavigate();
 
@@ -125,7 +137,10 @@ export default function Dashboard() {
                     id: state.state_code,
                     value: state.compliance_score > 0.4 ? 1 : 0
                 })).filter(state => state.value > 0.4).length > 0  ? 'red' :
-                    'green', // default color for undefined priority
+                Object.values(selectedFeature.state_compliance_scores).map((state) => ({
+                    id: state.state_code,
+                    value: state.compliance_score > 0.4 ? 1 : 0
+                })).filter(state => state.value <= 0.4).length > 0  ? 'green' : "grey", // default color for undefined priority
                 }}
             />
             <span>{option.label}</span>
@@ -138,68 +153,38 @@ export default function Dashboard() {
     <div style={{ padding: 20 }}>
       <div style={{ display: "flex", alignItems: "center", maxWidth: "100%" }}>
         <h1 style={{ marginTop: 0, maxWidth: "75%", fontSize: "28px" }}>
-            DASHBOARD -{" "}
-            <span style={{ display: "inline-block", maxWidth: "60%", verticalAlign: "bottom", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", }}>
-            {dashboardData.prd?.Name || 'Unknown PRD'}
-            </span>
+            DASHBOARD
         </h1>
         <div style={{ marginLeft: "auto", display: "flex", gap: "3px" }}>
             <Button onClick={() => navigate('/')}>Go to PRD Form</Button>
-            <Button onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
             <Button onClick={() => signOut()}>Sign Out</Button>
         </div>
-    </div>
+      </div>
 
       <Row style={{marginBottom:"10px"}}>
-            <Card style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} title={<>Feature: <Select
-                style={{ width: "47%" }}
-                //defaultValue={selectedFeature.feature.feature_name}
-                onChange={(value) => {
-                    const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
-                    setSelectedFeature(feature);
-                }}
-                options={featureOptionsWithCircles}
-                placeholder="Select a feature"
-                /></>}
-            >
-            <Row style={{fontWeight:500}} justify="space-evenly">
-                <Col span={11}>
-                    <div style={{marginTop: "5px", marginBottom:"5px"}}><b>Description</b>:</div><br />
-                    <div>{selectedFeature?.feature.feature_description ?? ""}</div>
-                </Col>
-                <Col span={11} style={{marginLeft: "auto"}} >
-                    <div style={{textAlign:"center", fontSize:"16px", marginTop: "5px", marginBottom:"5px"}}>States Compliance</div>
-                    <Row justify={"center"}>
-                        <Col span={10} style={{textAlign:"center"}}>
-                            <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '90%', fontSize: "12px" }}>
-                                <CheckCircleOutlined style={{fontSize: "20px"}} /><br />
-                                {selectedFeature ? (mapData.filter(state => state.value <= 0.4).length || 0) : ("NA")}<br />
-                                Compliant
-                            </Card>
-                        </Col>
-                        <Col span={10} style={{textAlign:"center"}}>
-                            <Card style={{ backgroundColor: "#FFCCCC", color: "red", marginRight:"8px", height: '90%', fontSize: "12px" }}>
-                                <WarningOutlined style={{fontSize: "20px"}}/><br />
-                                {selectedFeature ? (mapData.filter(state => state.value > 0.4).length || 0) : ("NA")}<br />
-                                Non-compliant
-                            </Card>
-                        </Col>
-                    </Row>
-                </Col>
-            </Row>
-          </Card>
+        <Card title={dashboardData.prd?.Name && <span>PRD - {dashboardData.prd?.Name}</span>} style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} >
+        <Row style={{fontWeight:500}} justify="space-evenly">
+            <Col span={20}>
+                <p><strong>Description:</strong> {dashboardData.prd?.Description || 'N/A'}</p>
+            </Col>
+            <Col span={4} style={{marginTop: 6, justifyItems:"end"}}>
+                <Button style={{ marginRight: 2 }} onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
+                <Button>Upload</Button>
+            </Col>
+        </Row>
+        </Card>
       </Row>
 
-      <Row justify="space-evenly">
-        <Col span={11}>
+      <Row justify="space-evenly" style={{ display: 'flex', alignItems: 'stretch' }}>
+        <Col span={11} style={{ display: 'flex', flexDirection: 'column' }}>
             <Card
-            title="UNITED STATES OF AMERICA"
+            title="HEATMAP"
             headStyle={{ textAlign: 'center' }}
             bodyStyle={{ position: 'relative', overflow: 'hidden' }}
-            style={{ marginBottom: "10px"}}
+            style={{ marginBottom: "10px", flex: 1}}
           >
             {/* Make the parent positioned so the legend anchors to it */}
-            <div style={{ height: 365, position: 'relative' }}>
+            <div style={{ height: 365, position: 'relative', cursor: "pointer" }}>
               <ResponsiveChoropleth
                 data={mapData}
                 features={countries.features}
@@ -213,7 +198,7 @@ export default function Dashboard() {
 
                 /* IMPORTANT: keep the projection centered and stable */
                 // projectionCenter={[-98, 38]}           // approx center of contiguous US
-                projectionTranslation={[2, 1.3]}     // center within the SVG viewBox
+                projectionTranslation={[0.5, 0.5]}    // center within the SVG viewBox
                 projectionScale={440}                  // tuned for ~365px tall container
 
                 margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
@@ -236,6 +221,7 @@ export default function Dashboard() {
                     </div>
                     );
                 }}
+                onClick={(feature) => {showStateModal(feature)}}
               />
 
               {/* Legend pinned to the map container (not the page) */}
@@ -264,86 +250,47 @@ export default function Dashboard() {
                 </div>
               </div>
             </div>
-            <Card style={{ marginBottom: "10px", maxHeight: "40%", overflowY: "scroll" }}>
-                <span><b>Analysis</b></span><br></br>
-                {selectedFeature ? (
-                <div>
-                    <p><strong>Risk Level:</strong> {selectedFeature.risk_level?.toUpperCase() || 'N/A'}</p>
-                    <p><strong>Confidence Score:</strong> {selectedFeature.confidence_score ? `${(selectedFeature.confidence_score * 100).toFixed(1)}%` : 'N/A'}</p>
-                    <p><strong>Compliance Flags:</strong></p>
-                    <ul>
-                    {selectedFeature.compliance_flags?.map((flag: string, index: number) => (
-                        <li key={index}>{flag}</li>
-                    )) || <li>None</li>}
-                    </ul>
-                    <p><strong>Non-Compliant States:</strong> {selectedFeature ? (mapData.filter(state => state.value > 0.39).length || 0) : ("NA")} states</p>
-                    <p><strong>Processing Time:</strong> {selectedFeature.processing_time ? `${selectedFeature.processing_time.toFixed(2)}s` : 'N/A'}</p>
-                </div>
-                ) : (
-                <p>Select a feature to view analysis</p>
-                )}
-            </Card>
-            <Card style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}} title="Executive Report">
-                    {dashboardData.prd?.executive_report ? (
-                        <div>
-                            <p><strong>Report ID:</strong> {dashboardData.prd.executive_report.report_id || 'N/A'}</p>
-                            <p><strong>Generated:</strong> {dashboardData.prd.executive_report.generated_at ? new Date(dashboardData.prd.executive_report.generated_at).toLocaleString() : 'N/A'}</p>
-                            <div style={{ marginTop: '10px' }}>
-                                <p><strong>Executive Summary:</strong></p>
-                                <div style={{ 
-                                    fontSize: '12px', 
-                                    maxHeight: '150px', 
-                                    overflowY: 'auto', 
-                                    border: '1px solid #d9d9d9', 
-                                    padding: '8px', 
-                                    borderRadius: '4px',
-                                    backgroundColor: '#fafafa'
-                                }}>
-                                    {dashboardData.prd.executive_report.executive_summary || 'No summary available'}
-                                </div>
-                            </div>
-                            <div style={{ marginTop: '10px' }}>
-                                <p><strong>Key Findings:</strong></p>
-                                <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
-                                    {dashboardData.prd.executive_report.key_findings?.slice(0, 3).map((finding: string, index: number) => (
-                                        <li key={index}>{finding}</li>
-                                    )) || <li>No findings available</li>}
-                                </ul>
-                            </div>
-                            <div style={{ marginTop: '10px' }}>
-                                <p><strong>Next Steps:</strong></p>
-                                <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
-                                    {dashboardData.prd.executive_report.next_steps?.slice(0, 2).map((step: string, index: number) => (
-                                        <li key={index}>{step}</li>
-                                    )) || <li>No next steps available</li>}
-                                </ul>
-                            </div>
-                        </div>
-                    ) : (
-                        <p>No executive report available</p>
-                    )}
-                    <div style={{ display: 'flex', justifyContent: 'center' }}>
-                        <Button>Download</Button>
+            <Card style={{ marginBottom: "10px", overflowY: "scroll", flex: 1 }}>
+                <>
+                    <div>
+                        Feature:{" "} 
+                        <Select
+                        style={{ width: "70%" }}
+                        defaultValue={dashboardData.prd.langgraph_analysis.feature_compliance_results[0]?.feature.feature_name || ""}
+                        onChange={(value) => {
+                            const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
+                            setSelectedFeature(feature);
+                        }}
+                        options={featureOptionsWithCircles}
+                        placeholder="Select a feature"
+                        />
                     </div>
-                </Card>
+                    <div style={{marginTop: "20px", marginBottom:"5px"}}><b>Description</b>:</div>
+                    <div>{selectedFeature?.feature.feature_description}</div>
+                </>
+            </Card> 
           </Card>
         </Col>
-        <Col span={11}>
-            <Card title="PRD" style={{ marginBottom: "10px", maxHeight: "38%", overflowY: "scroll" }}>
-                <div>
-                <p><strong>Description:</strong> {dashboardData.prd?.Description || 'N/A'}</p>
-                <p><strong>Status:</strong> {dashboardData.prd?.Status || 'N/A'}</p>
-                <p><strong>Created:</strong> {dashboardData.prd?.created_at ? new Date(dashboardData.prd.created_at).toLocaleDateString() : 'N/A'}</p>
-                <p><strong>Total Features:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.length || 0}</p>
-                <p><strong>High Risk:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.filter((item: { risk_level: string; }) => item.risk_level === "high").length || 0}</p>
-                <p><strong>Medium Risk:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.filter((item: { risk_level: string; }) => item.risk_level === "medium").length || 0}</p>
-                <p><strong>Low Risk:</strong> {dashboardData.prd?.langgraph_analysis.feature_compliance_results.filter((item: { risk_level: string; }) => item.risk_level === "low").length || 0}</p>
-                </div>
-                <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
-                <Button style={{ marginRight: "10px" }}>Upload</Button>
-                </div>
-            </Card>
-            <Card style={{ maxHeight: "40%", overflowY: "scroll" }} title="Recommendation">
+        <Col span={11} style={{ display: 'flex', flexDirection: 'column' }}>
+            <Card style={{ flex: 1, overflowY: "scroll" }} title="Analysis">
+                <div style={{textAlign:"center", fontSize:"16px", marginTop: "5px", marginBottom:"5px"}}>States Compliance</div>
+                    <Row justify={"center"}>
+                        <Col span={10} style={{textAlign:"center"}}>
+                            <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '90%', fontSize: "12px" }}>
+                                <CheckCircleOutlined style={{fontSize: "20px"}} /><br />
+                                {selectedFeature ? (mapData.filter(state => state.value <= 0.4).length || 0) : ("NA")}<br />
+                                Compliant
+                            </Card>
+                        </Col>
+                        <Col span={10} style={{textAlign:"center"}}>
+                            <Card style={{ backgroundColor: "#FFCCCC", color: "red", marginRight:"8px", height: '90%', fontSize: "12px" }}>
+                                <WarningOutlined style={{fontSize: "20px"}}/><br />
+                                {selectedFeature ? (mapData.filter(state => state.value > 0.4).length || 0) : ("NA")}<br />
+                                Non-compliant
+                            </Card>
+                        </Col>
+                    </Row>
+                <div style={{textAlign:"center", fontSize:"16px", marginTop: "30px", marginBottom:"5px"}}>Recommendation</div>
             {selectedFeature ? (
               <div>
                 {selectedFeature?.recommendations && selectedFeature?.recommendations.length > 0 ? (
@@ -379,6 +326,12 @@ export default function Dashboard() {
           </Card>
         </Col>
       </Row>
+      <Modal
+        open={openStateModal}
+        onCancel={() => {closeStateModal()}}
+      >
+        {stateModalData?.label}
+      </Modal>
     </div>
   );
 }
