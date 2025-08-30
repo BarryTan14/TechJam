@@ -99,6 +99,14 @@ class ExecutiveReportGenerator:
         if workflow_state.critical_compliance_issues:
             findings.append(f"Critical Compliance Issues Identified: {len(workflow_state.critical_compliance_issues)}")
         
+        # Cultural sensitivity analysis
+        if hasattr(workflow_state, 'cultural_sensitivity_analysis') and workflow_state.cultural_sensitivity_analysis:
+            cultural_analysis = workflow_state.cultural_sensitivity_analysis
+            findings.append(f"US Cultural Sensitivity Level: {cultural_analysis.get('overall_cultural_sensitivity', 'Unknown').upper()}")
+            findings.append(f"Cultural Sensitivity Score: {cultural_analysis.get('overall_average_score', 0.0):.2f}")
+            findings.append(f"Cultural Issues Identified: {len(cultural_analysis.get('key_cultural_issues', []))}")
+            findings.append(f"Cultural Recommendations: {len(cultural_analysis.get('recommendations', []))}")
+        
         return findings
     
     def _generate_risk_assessment(self, workflow_state: 'WorkflowState') -> Dict[str, Any]:
@@ -108,7 +116,8 @@ class ExecutiveReportGenerator:
             "overall_confidence_score": workflow_state.overall_confidence_score,
             "feature_risk_distribution": {},
             "state_risk_analysis": {},
-            "critical_issues": workflow_state.critical_compliance_issues
+            "critical_issues": workflow_state.critical_compliance_issues,
+            "cultural_sensitivity_risk": {}
         }
         
         # Feature risk distribution
@@ -130,6 +139,19 @@ class ExecutiveReportGenerator:
                     "compliance_rate": state_data.get("compliance_rate", 0.0)
                 }
             risk_assessment["state_risk_analysis"] = state_risks
+        
+        # Cultural sensitivity risk analysis
+        if hasattr(workflow_state, 'cultural_sensitivity_analysis') and workflow_state.cultural_sensitivity_analysis:
+            cultural_analysis = workflow_state.cultural_sensitivity_analysis
+            risk_assessment["cultural_sensitivity_risk"] = {
+                "overall_sensitivity_level": cultural_analysis.get('overall_cultural_sensitivity', 'unknown'),
+                "overall_sensitivity_score": cultural_analysis.get('overall_average_score', 0.0),
+                "requires_human_review": cultural_analysis.get('requires_human_review', True),
+                "key_cultural_issues": cultural_analysis.get('key_cultural_issues', []),
+                "regional_scores": cultural_analysis.get('regional_scores', {}),
+                "total_features_analyzed": cultural_analysis.get('total_features_analyzed', 0),
+                "regions_analyzed": cultural_analysis.get('regions_analyzed', 0)
+            }
         
         return risk_assessment
     
@@ -179,6 +201,13 @@ class ExecutiveReportGenerator:
         if hasattr(workflow_state, 'summary_recommendations') and workflow_state.summary_recommendations:
             all_recommendations.extend(workflow_state.summary_recommendations)
         
+        # Add cultural sensitivity recommendations
+        if hasattr(workflow_state, 'cultural_sensitivity_analysis') and workflow_state.cultural_sensitivity_analysis:
+            cultural_recommendations = workflow_state.cultural_sensitivity_analysis.get('recommendations', [])
+            # Prefix cultural recommendations to make them identifiable
+            cultural_recommendations = [f"[Cultural] {rec}" for rec in cultural_recommendations]
+            all_recommendations.extend(cultural_recommendations)
+        
         # Remove duplicates and prioritize
         unique_recommendations = []
         seen = set()
@@ -188,8 +217,8 @@ class ExecutiveReportGenerator:
                 unique_recommendations.append(rec)
                 seen.add(rec_lower)
         
-        # Return top 15 most important recommendations
-        return unique_recommendations[:15]
+        # Return top 20 most important recommendations (increased to accommodate cultural recommendations)
+        return unique_recommendations[:20]
     
     def _generate_next_steps(self, workflow_state: 'WorkflowState') -> List[str]:
         """Generate actionable next steps"""
@@ -230,7 +259,51 @@ class ExecutiveReportGenerator:
             if critical_states:
                 next_steps.append(f"Prioritize compliance in {len(critical_states)} high-risk states")
         
+        # Cultural sensitivity next steps
+        if hasattr(workflow_state, 'cultural_sensitivity_analysis') and workflow_state.cultural_sensitivity_analysis:
+            cultural_analysis = workflow_state.cultural_sensitivity_analysis
+            sensitivity_level = cultural_analysis.get('overall_cultural_sensitivity', 'unknown')
+            
+            if sensitivity_level == "low":
+                next_steps.extend([
+                    "Immediate cultural sensitivity review required",
+                    "Implement cultural sensitivity training for development team",
+                    "Conduct user research with diverse US populations",
+                    "Review and update feature designs for cultural inclusivity"
+                ])
+            elif sensitivity_level == "medium":
+                next_steps.extend([
+                    "Conduct cultural sensitivity assessment",
+                    "Implement cultural sensitivity improvements",
+                    "Review feature designs for accessibility and inclusion",
+                    "Consider diverse user testing groups"
+                ])
+            else:  # high sensitivity
+                next_steps.extend([
+                    "Maintain current cultural sensitivity standards",
+                    "Continue monitoring cultural sensitivity metrics",
+                    "Regular cultural sensitivity reviews",
+                    "Stay updated on US cultural trends and regulations"
+                ])
+        
         return next_steps
+    
+    def _format_cultural_sensitivity_info(self, workflow_state: 'WorkflowState') -> str:
+        """Format cultural sensitivity information for the executive summary"""
+        if not hasattr(workflow_state, 'cultural_sensitivity_analysis') or not workflow_state.cultural_sensitivity_analysis:
+            return "- Cultural Sensitivity Analysis: Not available"
+        
+        cultural_analysis = workflow_state.cultural_sensitivity_analysis
+        info_lines = [
+            f"- Overall Cultural Sensitivity: {cultural_analysis.get('overall_cultural_sensitivity', 'Unknown').upper()}",
+            f"- Cultural Sensitivity Score: {cultural_analysis.get('overall_average_score', 0.0):.2f}",
+            f"- Features Analyzed: {cultural_analysis.get('total_features_analyzed', 0)}",
+            f"- Key Cultural Issues: {len(cultural_analysis.get('key_cultural_issues', []))}",
+            f"- Cultural Recommendations: {len(cultural_analysis.get('recommendations', []))}",
+            f"- Requires Human Review: {'Yes' if cultural_analysis.get('requires_human_review', True) else 'No'}"
+        ]
+        
+        return chr(10).join(info_lines)
     
     def _generate_executive_summary(self, workflow_state: 'WorkflowState', 
                                   key_findings: List[str], 
@@ -270,6 +343,9 @@ Compliance Overview:
 - Total Features: {compliance_overview.get('total_features', 0)}
 - Overall Compliance Rate: {compliance_overview.get('overall_compliance_rate', 0.0):.1%}
 
+Cultural Sensitivity Analysis:
+{self._format_cultural_sensitivity_info(workflow_state)}
+
 Top Recommendations:
 {chr(10).join(f"- {rec}" for rec in self._extract_recommendations(workflow_state)[:5])}
 
@@ -277,11 +353,12 @@ Generate a professional executive summary that includes:
 1. Executive Overview (2-3 sentences)
 2. Key Risk Assessment (2-3 sentences)
 3. Compliance Status Summary (2-3 sentences)
-4. Critical Issues and Concerns (2-3 sentences)
-5. Strategic Recommendations (2-3 sentences)
-6. Next Steps (1-2 sentences)
+4. Cultural Sensitivity Assessment (2-3 sentences)
+5. Critical Issues and Concerns (2-3 sentences)
+6. Strategic Recommendations (2-3 sentences)
+7. Next Steps (1-2 sentences)
 
-Make it business-friendly, actionable, and suitable for executive leadership."""
+Make it business-friendly, actionable, and suitable for executive leadership. Ensure cultural sensitivity is prominently featured as it's critical for US market success."""
         
         try:
             response = self.llm.generate_content(prompt)
@@ -329,6 +406,26 @@ Make it business-friendly, actionable, and suitable for executive leadership."""
         overview += f"Critical compliance issues were identified in {critical_issues} areas, with {non_compliant_states} states "
         overview += f"showing compliance concerns. The analysis covered key privacy regulations including GDPR, CCPA, "
         overview += f"and state-specific data protection laws.\n\n"
+        
+        # Cultural Sensitivity Assessment
+        overview += f"CULTURAL SENSITIVITY ASSESSMENT\n"
+        if hasattr(workflow_state, 'cultural_sensitivity_analysis') and workflow_state.cultural_sensitivity_analysis:
+            cultural_analysis = workflow_state.cultural_sensitivity_analysis
+            sensitivity_level = cultural_analysis.get('overall_cultural_sensitivity', 'unknown').upper()
+            sensitivity_score = cultural_analysis.get('overall_average_score', 0.0)
+            cultural_issues = len(cultural_analysis.get('key_cultural_issues', []))
+            
+            overview += f"US Cultural Sensitivity Level: {sensitivity_level} (Score: {sensitivity_score:.2f}). "
+            overview += f"The analysis identified {cultural_issues} key cultural issues requiring attention. "
+            
+            if sensitivity_level == "LOW":
+                overview += f"Immediate cultural sensitivity improvements are required for US market success.\n\n"
+            elif sensitivity_level == "MEDIUM":
+                overview += f"Moderate cultural sensitivity improvements recommended to enhance US market readiness.\n\n"
+            else:  # HIGH
+                overview += f"Strong cultural sensitivity posture demonstrated, suitable for diverse US market.\n\n"
+        else:
+            overview += f"Cultural sensitivity analysis not available. Consider conducting US-specific cultural assessment.\n\n"
         
         # Critical Issues
         overview += f"CRITICAL ISSUES AND CONCERNS\n"

@@ -6,6 +6,8 @@ MongoDB Configuration Settings
 MONGO_URI = "mongodb+srv://tanedric_db_user:vZkI4o5u3VnKvThk@techjam.8cvwszr.mongodb.net/?retryWrites=true&w=majority&appName=TechJam"
 DATABASE_NAME = "TechJam"
 COLLECTION_NAME = "terminology"
+EXECUTIVE_REPORTS_COLLECTION = "executive_reports"  # New collection for executive reports
+CULTURAL_SENSITIVITY_COLLECTION = "cultural_sensitivity"  # New collection for cultural sensitivity analysis
 
 # Alternative connection strings for different environments
 # MONGO_URI = "mongodb://username:password@localhost:27017/"

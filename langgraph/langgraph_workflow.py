@@ -426,18 +426,19 @@ class ComplianceWorkflow:
         
         print(f"✅ Executive report generated: {executive_report.report_id}")
         
-        # Store executive report in MongoDB
-        print(f"💾 Storing executive report in MongoDB...")
-        storage_success = self.executive_report_manager.store_executive_report(
+        # Store both executive report and cultural sensitivity analysis in MongoDB
+        print(f"💾 Storing workflow results in MongoDB...")
+        storage_success = self.executive_report_manager.store_workflow_results(
             state.executive_report,
+            state.cultural_sensitivity_analysis,
             state.prd_id,
             state.workflow_id
         )
         
         if storage_success:
-            print(f"✅ Executive report stored in MongoDB successfully")
+            print(f"✅ Workflow results stored in MongoDB successfully")
         else:
-            print(f"⚠️ Failed to store executive report in MongoDB")
+            print(f"⚠️ Failed to store workflow results in MongoDB")
         
         # Save results
         self.save_workflow_results(state, state_analysis_results)
@@ -552,8 +553,8 @@ class ComplianceWorkflow:
         all_cultural_issues = []
         all_recommendations = []
         
-        # Initialize regional scores
-        regions = ["global", "north_america", "europe", "asia_pacific", "middle_east", "africa", "latin_america"]
+        # Initialize regional scores (now US-focused)
+        regions = ["united_states"]
         for region in regions:
             regional_scores[region] = {
                 "average_score": 0.0,
@@ -566,7 +567,7 @@ class ComplianceWorkflow:
                 "recommendations": []
             }
         
-        # Aggregate scores from all features
+        # Aggregate scores from all features (US-focused)
         for result in state.feature_compliance_results:
             if hasattr(result, 'cultural_sensitivity_scores') and result.cultural_sensitivity_scores:
                 for region, score in result.cultural_sensitivity_scores.items():
@@ -673,6 +674,10 @@ class ComplianceWorkflow:
                         "state_compliance_scores": {
                             state_code: asdict(score_data) 
                             for state_code, score_data in result.state_compliance_scores.items()
+                        },
+                        "cultural_sensitivity_scores": {
+                            region: asdict(score_data) 
+                            for region, score_data in result.cultural_sensitivity_scores.items()
                         },
                         "processing_time": result.processing_time,
                         "timestamp": result.timestamp
@@ -928,20 +933,21 @@ class ComplianceWorkflow:
                 
                 # Create FeatureComplianceResult
                 feature_result = FeatureComplianceResult(
-                    feature=feature,
-                    agent_outputs={},  # Empty dict since this is converted from state analysis
-                    compliance_flags=[],  # Will be populated from regulation matching
-                    risk_level=overall_risk_level,
-                    confidence_score=0.8,  # Default confidence
-                    requires_human_review=overall_risk_level == "high",
-                    reasoning=f"Feature analyzed across {len(feature_state_results)} states. {len(non_compliant_states)} non-compliant states.",
-                    recommendations=final_recommendations,  # Populated with collected recommendations
-                    us_state_compliance=[],  # Empty list since this is converted from state analysis
-                    non_compliant_states=non_compliant_states,
-                    state_compliance_scores=state_compliance_scores,
-                    processing_time=0.0,  # Will be calculated
-                    timestamp=get_singapore_time().isoformat()
-                )
+                     feature=feature,
+                     agent_outputs={},  # Empty dict since this is converted from state analysis
+                     compliance_flags=[],  # Will be populated from regulation matching
+                     risk_level=overall_risk_level,
+                     confidence_score=0.8,  # Default confidence
+                     requires_human_review=overall_risk_level == "high",
+                     reasoning=f"Feature analyzed across {len(feature_state_results)} states. {len(non_compliant_states)} non-compliant states.",
+                     recommendations=final_recommendations,  # Populated with collected recommendations
+                     us_state_compliance=[],  # Empty list since this is converted from state analysis
+                     non_compliant_states=non_compliant_states,
+                     state_compliance_scores=state_compliance_scores,
+                     cultural_sensitivity_scores={},  # Empty dict since cultural sensitivity is analyzed separately
+                     processing_time=0.0,  # Will be calculated
+                     timestamp=get_singapore_time().isoformat()
+                 )
                 
                 feature_results.append(feature_result)
         

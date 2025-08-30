@@ -1,6 +1,6 @@
 """
 Cultural Sensitivity Analyzer Agent
-Analyzes features for cultural sensitivity across different regions and provides detailed reasoning
+Analyzes features for cultural sensitivity specifically for the United States and provides detailed reasoning
 """
 
 import json
@@ -13,7 +13,7 @@ from .models import AgentOutput
 
 @dataclass
 class CulturalSensitivityScore:
-    """Cultural sensitivity score data structure"""
+    """Cultural sensitivity score data structure for US analysis"""
     region: str
     overall_score: float  # 0.0 to 1.0
     score_level: str  # "low", "medium", "high"
@@ -26,137 +26,193 @@ class CulturalSensitivityScore:
 
 
 class CulturalSensitivityAnalyzer:
-    """Agent for analyzing cultural sensitivity of features across regions"""
+    """Agent for analyzing cultural sensitivity of features specifically for the United States"""
     
     def __init__(self, llm=None):
         self.llm = llm
-        self.agent_name = "Cultural Sensitivity Analyzer"
+        self.agent_name = "US Cultural Sensitivity Analyzer"
         
-        # Cultural sensitivity factors by region
-        self.cultural_factors = {
-            "global": {
-                "language": ["Translation quality", "Local dialects", "Cultural idioms"],
-                "religion": ["Religious holidays", "Dietary restrictions", "Prayer times"],
-                "social_norms": ["Gender roles", "Age hierarchy", "Social customs"],
-                "values": ["Individualism vs collectivism", "Time orientation", "Power distance"],
-                "communication": ["Direct vs indirect", "Formality levels", "Non-verbal cues"]
+        # US-specific cultural sensitivity factors
+        self.us_cultural_factors = {
+            "diversity_and_inclusion": {
+                "racial_diversity": ["African American", "Hispanic/Latino", "Asian American", "Native American", "Multiracial"],
+                "ethnic_diversity": ["Immigrant communities", "Cultural heritage", "Language diversity", "Religious diversity"],
+                "gender_identity": ["LGBTQ+ rights", "Gender equality", "Non-binary inclusion", "Transgender rights"],
+                "age_diversity": ["Baby Boomers", "Gen X", "Millennials", "Gen Z", "Age discrimination"],
+                "disability_rights": ["ADA compliance", "Accessibility", "Inclusive design", "Assistive technologies"],
+                "socioeconomic": ["Income inequality", "Educational access", "Digital divide", "Rural vs urban"]
             },
-            "north_america": {
-                "diversity": ["Multicultural populations", "Indigenous rights", "Immigration history"],
-                "privacy": ["Individual privacy rights", "Data protection", "Personal space"],
-                "accessibility": ["Disability rights", "Universal design", "Inclusive language"],
-                "gender": ["Gender equality", "LGBTQ+ rights", "Non-binary inclusion"],
-                "age": ["Age discrimination", "Intergenerational respect", "Youth culture"]
+            "privacy_and_data": {
+                "individual_privacy": ["Personal data rights", "Privacy expectations", "Data ownership", "Consent culture"],
+                "state_regulations": ["CCPA (California)", "CPRA", "VCDPA (Virginia)", "CDPA (Colorado)", "State-specific laws"],
+                "federal_regulations": ["HIPAA", "FERPA", "COPPA", "GLBA", "Federal privacy laws"],
+                "surveillance_concerns": ["Government surveillance", "Corporate tracking", "Facial recognition", "Location privacy"]
             },
-            "europe": {
-                "privacy": ["GDPR compliance", "Data sovereignty", "Right to be forgotten"],
-                "multilingual": ["Official languages", "Regional dialects", "Translation requirements"],
-                "social_welfare": ["Universal healthcare", "Social safety nets", "Worker rights"],
-                "environmental": ["Sustainability", "Green initiatives", "Climate awareness"],
-                "cultural_heritage": ["Historical preservation", "Traditional customs", "Regional identity"]
+            "communication_style": {
+                "direct_communication": ["Straightforward language", "Clear expectations", "Transparent messaging", "Honest feedback"],
+                "cultural_sensitivity": ["Inclusive language", "Avoiding stereotypes", "Respectful terminology", "Cultural awareness"],
+                "accessibility": ["Plain language", "Multiple languages", "Visual aids", "Audio alternatives"],
+                "digital_communication": ["Email etiquette", "Social media", "Text messaging", "Video calls"]
             },
-            "asia_pacific": {
-                "collectivism": ["Group harmony", "Family values", "Community focus"],
-                "hierarchy": ["Respect for authority", "Age-based respect", "Social status"],
-                "face_culture": ["Saving face", "Indirect communication", "Conflict avoidance"],
-                "technology": ["Digital adoption", "Mobile-first", "Innovation culture"],
-                "religion": ["Buddhism", "Hinduism", "Islam", "Christianity", "Local beliefs"]
+            "values_and_beliefs": {
+                "individualism": ["Personal responsibility", "Self-reliance", "Individual achievement", "Personal choice"],
+                "equality": ["Equal opportunity", "Civil rights", "Social justice", "Anti-discrimination"],
+                "freedom": ["Freedom of speech", "Religious freedom", "Personal liberty", "Constitutional rights"],
+                "innovation": ["Technology adoption", "Entrepreneurship", "Risk-taking", "Progress orientation"]
             },
-            "middle_east": {
-                "religion": ["Islamic principles", "Religious law", "Prayer requirements"],
-                "family": ["Family honor", "Extended families", "Gender roles"],
-                "hospitality": ["Guest culture", "Generosity", "Social obligations"],
-                "modesty": ["Dress codes", "Behavior standards", "Privacy concerns"],
-                "authority": ["Respect for leaders", "Traditional governance", "Social hierarchy"]
+            "regional_differences": {
+                "geographic_regions": ["Northeast", "Southeast", "Midwest", "Southwest", "West Coast", "Alaska/Hawaii"],
+                "urban_vs_rural": ["City culture", "Suburban lifestyle", "Rural communities", "Digital access"],
+                "coastal_vs_inland": ["Coastal culture", "Inland perspectives", "Regional identity", "Economic differences"],
+                "red_vs_blue_states": ["Political culture", "Policy preferences", "Social values", "Regulatory environment"]
             },
-            "africa": {
-                "community": ["Ubuntu philosophy", "Collective responsibility", "Village culture"],
-                "oral_tradition": ["Storytelling", "Elder wisdom", "Cultural knowledge"],
-                "diversity": ["Ethnic groups", "Languages", "Cultural practices"],
-                "spirituality": ["Traditional beliefs", "Ancestral worship", "Religious diversity"],
-                "family": ["Extended families", "Respect for elders", "Community support"]
+            "religious_and_spiritual": {
+                "christianity": ["Protestant", "Catholic", "Orthodox", "Evangelical", "Mainline"],
+                "other_religions": ["Judaism", "Islam", "Hinduism", "Buddhism", "Sikhism", "Atheism/Agnosticism"],
+                "religious_freedom": ["Separation of church and state", "Religious accommodation", "Holiday recognition", "Prayer practices"],
+                "spiritual_diversity": ["New Age", "Indigenous spirituality", "Secular humanism", "Personal beliefs"]
             },
-            "latin_america": {
-                "family": ["Family bonds", "Extended families", "Intergenerational support"],
-                "social": ["Personal relationships", "Social networks", "Community ties"],
-                "religion": ["Catholic influence", "Indigenous beliefs", "Religious diversity"],
-                "time": ["Flexible time", "Social time", "Event-oriented"],
-                "communication": ["Warm communication", "Personal touch", "Emotional expression"]
+            "social_issues": {
+                "racial_justice": ["Systemic racism", "Police reform", "Criminal justice", "Educational equity"],
+                "immigration": ["Immigrant rights", "DACA", "Border policies", "Cultural integration"],
+                "healthcare": ["Healthcare access", "Mental health", "Disability rights", "Aging population"],
+                "environmental": ["Climate change", "Environmental justice", "Sustainability", "Green initiatives"]
+            },
+            "technology_and_digital": {
+                "digital_literacy": ["Technology adoption", "Digital skills", "Online safety", "Information literacy"],
+                "social_media": ["Platform diversity", "Content moderation", "Online harassment", "Digital wellbeing"],
+                "artificial_intelligence": ["AI bias", "Algorithmic fairness", "Automation concerns", "Ethical AI"],
+                "cybersecurity": ["Data breaches", "Identity theft", "Online privacy", "Digital security"]
             }
         }
     
     def analyze_cultural_sensitivity(self, feature_name: str, feature_description: str, 
-                                   feature_content: str, region: str) -> CulturalSensitivityScore:
+                                   feature_content: str, region: str = "united_states") -> CulturalSensitivityScore:
         """
-        Analyze cultural sensitivity for a feature in a specific region
+        Analyze cultural sensitivity for a feature specifically for the United States
         
         Args:
             feature_name: Name of the feature
             feature_description: Description of the feature
             feature_content: Detailed content of the feature
-            region: Target region for analysis
+            region: Target region (defaults to "united_states")
             
         Returns:
-            CulturalSensitivityScore object with detailed analysis
+            CulturalSensitivityScore object with detailed US-specific analysis
         """
-        print(f"🌍 Analyzing cultural sensitivity for '{feature_name}' in {region}")
+        print(f"🇺🇸 Analyzing US cultural sensitivity for '{feature_name}'")
         
         # Generate analysis using LLM
         if self.llm:
-            return self._analyze_with_llm(feature_name, feature_description, feature_content, region)
+            return self._analyze_with_llm(feature_name, feature_description, feature_content)
         else:
-            return self._analyze_with_rules(feature_name, feature_description, feature_content, region)
+            return self._analyze_with_rules(feature_name, feature_description, feature_content)
     
     def _analyze_with_llm(self, feature_name: str, feature_description: str, 
-                         feature_content: str, region: str) -> CulturalSensitivityScore:
-        """Analyze cultural sensitivity using LLM"""
+                         feature_content: str) -> CulturalSensitivityScore:
+        """Analyze cultural sensitivity using LLM with US-specific focus"""
         
-        # Get cultural factors for the region
-        region_factors = self.cultural_factors.get(region, self.cultural_factors["global"])
-        
-        prompt = f"""You are a cultural sensitivity expert analyzing a feature for deployment in {region.upper()}.
+        prompt = f"""You are a US cultural sensitivity expert analyzing a feature for deployment in the United States.
 
 FEATURE INFORMATION:
 Name: {feature_name}
 Description: {feature_description}
-Content: {feature_content[:1000]}{'...' if len(feature_content) > 1000 else ''}
+Content: {feature_content[:1500]}{'...' if len(feature_content) > 1500 else ''}
 
-REGIONAL CULTURAL FACTORS TO CONSIDER:
-{json.dumps(region_factors, indent=2)}
+US CULTURAL SENSITIVITY FACTORS TO CONSIDER:
+
+1. DIVERSITY & INCLUSION:
+   - Racial diversity (African American, Hispanic/Latino, Asian American, Native American, Multiracial)
+   - Ethnic diversity (Immigrant communities, cultural heritage, language diversity)
+   - Gender identity (LGBTQ+ rights, gender equality, non-binary inclusion)
+   - Age diversity (Baby Boomers, Gen X, Millennials, Gen Z)
+   - Disability rights (ADA compliance, accessibility, inclusive design)
+   - Socioeconomic factors (Income inequality, educational access, digital divide)
+
+2. PRIVACY & DATA:
+   - Individual privacy rights and expectations
+   - State regulations (CCPA, CPRA, VCDPA, CDPA)
+   - Federal regulations (HIPAA, FERPA, COPPA, GLBA)
+   - Surveillance concerns and data ownership
+
+3. COMMUNICATION STYLE:
+   - Direct communication preferences
+   - Inclusive and respectful language
+   - Accessibility requirements
+   - Digital communication norms
+
+4. VALUES & BELIEFS:
+   - Individualism vs collectivism
+   - Equality and civil rights
+   - Freedom and personal liberty
+   - Innovation and technology adoption
+
+5. REGIONAL DIFFERENCES:
+   - Geographic regions (Northeast, Southeast, Midwest, Southwest, West Coast)
+   - Urban vs rural perspectives
+   - Political and cultural differences
+   - Economic and social variations
+
+6. RELIGIOUS & SPIRITUAL:
+   - Religious diversity and freedom
+   - Separation of church and state
+   - Holiday recognition and accommodation
+   - Spiritual and secular perspectives
+
+7. SOCIAL ISSUES:
+   - Racial justice and systemic racism
+   - Immigration and cultural integration
+   - Healthcare access and mental health
+   - Environmental justice and sustainability
+
+8. TECHNOLOGY & DIGITAL:
+   - Digital literacy and technology adoption
+   - Social media and online behavior
+   - AI bias and algorithmic fairness
+   - Cybersecurity and privacy concerns
 
 ANALYSIS REQUIREMENTS:
-1. Evaluate the feature's cultural sensitivity on a scale of 0.0 to 1.0 (0.0 = highly insensitive, 1.0 = highly sensitive)
-2. Provide detailed reasoning for your score
-3. Identify specific cultural factors that influenced your assessment
-4. List potential cultural issues or concerns
-5. Provide specific recommendations for improvement
-6. Assess your confidence in the analysis (0.0 to 1.0)
-7. Determine if human review is needed
+1. Evaluate the feature's cultural sensitivity for US users on a scale of 0.0 to 1.0
+   - 0.0-0.3: Highly insensitive (significant cultural issues)
+   - 0.4-0.6: Moderately sensitive (some concerns, needs improvement)
+   - 0.7-1.0: Highly sensitive (culturally appropriate)
+
+2. Provide detailed reasoning explaining:
+   - How the feature aligns with or conflicts with US cultural values
+   - Specific cultural factors that influenced your assessment
+   - Regional considerations if applicable
+   - Diversity and inclusion implications
+
+3. Identify specific potential cultural issues or concerns:
+   - Privacy and data handling concerns
+   - Accessibility and inclusion barriers
+   - Language and communication issues
+   - Regional or demographic-specific concerns
+
+4. Provide actionable recommendations for improvement:
+   - Specific changes to enhance cultural sensitivity
+   - Accessibility improvements
+   - Privacy and security enhancements
+   - Communication and language improvements
+   - Testing and validation suggestions
+
+5. Assess your confidence in the analysis (0.0 to 1.0)
+
+6. Determine if human review is needed (true/false)
 
 Return JSON with this structure:
 {{
     "overall_score": 0.75,
     "score_level": "high",
-    "reasoning": "Detailed explanation of cultural sensitivity assessment...",
+    "reasoning": "Detailed explanation of US cultural sensitivity assessment with specific examples...",
     "cultural_factors": ["factor1", "factor2"],
-    "potential_issues": ["issue1", "issue2"],
-    "recommendations": ["recommendation1", "recommendation2"],
+    "potential_issues": ["specific issue1", "specific issue2"],
+    "recommendations": ["specific recommendation1", "specific recommendation2"],
     "confidence_score": 0.85,
     "requires_human_review": false
 }}
 
-Focus on:
-- Language and communication patterns
-- Religious and spiritual considerations
-- Social norms and customs
-- Values and beliefs
-- Historical and political context
-- Gender and age considerations
-- Accessibility and inclusion
-- Privacy and data handling
-- Local regulations and laws
-
-Provide thorough, nuanced analysis with specific examples and actionable recommendations."""
+Focus on US-specific cultural context, legal requirements, and social values. Provide thorough, nuanced analysis with specific examples and actionable recommendations."""
 
         try:
             response = self.llm.generate_content(prompt)
@@ -171,7 +227,7 @@ Provide thorough, nuanced analysis with specific examples and actionable recomme
                 analysis_result = self._extract_json_from_response(response.text)
             
             return CulturalSensitivityScore(
-                region=region,
+                region="united_states",
                 overall_score=analysis_result.get("overall_score", 0.5),
                 score_level=analysis_result.get("score_level", "medium"),
                 reasoning=analysis_result.get("reasoning", "Analysis not available"),
@@ -184,63 +240,52 @@ Provide thorough, nuanced analysis with specific examples and actionable recomme
             
         except Exception as e:
             print(f"⚠️ LLM analysis failed: {e}")
-            return self._analyze_with_rules(feature_name, feature_description, feature_content, region)
+            return self._analyze_with_rules(feature_name, feature_description, feature_content)
     
     def _analyze_with_rules(self, feature_name: str, feature_description: str, 
-                           feature_content: str, region: str) -> CulturalSensitivityScore:
-        """Analyze cultural sensitivity using rule-based approach"""
+                           feature_content: str) -> CulturalSensitivityScore:
+        """Analyze cultural sensitivity using rule-based approach for US context"""
         
-        # Get cultural factors for the region
-        region_factors = self.cultural_factors.get(region, self.cultural_factors["global"])
-        
-        # Basic scoring logic
+        # Basic scoring logic for US cultural factors
         score = 0.5  # Default medium score
         cultural_factors = []
         potential_issues = []
         recommendations = []
         
-        # Analyze content for cultural sensitivity indicators
+        # Analyze feature content for US-specific cultural factors
         content_lower = feature_content.lower()
         
-        # Check for language considerations
-        if any(word in content_lower for word in ["language", "translation", "localization"]):
-            cultural_factors.append("Language and localization")
-            score += 0.1
-        else:
-            potential_issues.append("No language localization mentioned")
-            recommendations.append("Consider adding multi-language support")
-        
-        # Check for privacy considerations
-        if any(word in content_lower for word in ["privacy", "data protection", "gdpr"]):
-            cultural_factors.append("Privacy and data protection")
-            score += 0.1
-        else:
-            potential_issues.append("Privacy considerations not addressed")
-            recommendations.append("Review privacy implications for the region")
+        # Check for privacy and data handling
+        if any(term in content_lower for term in ["personal data", "user data", "tracking", "analytics"]):
+            cultural_factors.append("Privacy and data handling")
+            if "consent" not in content_lower or "opt-out" not in content_lower:
+                potential_issues.append("May not provide adequate user consent mechanisms")
+                recommendations.append("Implement clear consent mechanisms and opt-out options")
+                score -= 0.1
         
         # Check for accessibility
-        if any(word in content_lower for word in ["accessibility", "disability", "inclusive"]):
+        if any(term in content_lower for term in ["interface", "user interface", "design", "layout"]):
             cultural_factors.append("Accessibility and inclusion")
-            score += 0.1
-        else:
-            potential_issues.append("Accessibility not considered")
-            recommendations.append("Implement accessibility features")
+            if "accessibility" not in content_lower and "ada" not in content_lower:
+                potential_issues.append("May not meet ADA accessibility requirements")
+                recommendations.append("Ensure ADA compliance and inclusive design principles")
+                score -= 0.1
         
-        # Check for religious considerations
-        if any(word in content_lower for word in ["religion", "religious", "prayer", "halal", "kosher"]):
-            cultural_factors.append("Religious considerations")
-            score += 0.1
-        else:
-            potential_issues.append("Religious factors not addressed")
-            recommendations.append("Consider religious requirements for the region")
+        # Check for language and communication
+        if any(term in content_lower for term in ["language", "communication", "text", "message"]):
+            cultural_factors.append("Communication style")
+            if "inclusive" not in content_lower and "diverse" not in content_lower:
+                potential_issues.append("May not use inclusive language")
+                recommendations.append("Use inclusive and culturally sensitive language")
+                score -= 0.05
         
-        # Check for gender considerations
-        if any(word in content_lower for word in ["gender", "women", "men", "equality"]):
-            cultural_factors.append("Gender considerations")
-            score += 0.1
-        else:
-            potential_issues.append("Gender considerations not addressed")
-            recommendations.append("Review gender-related implications")
+        # Check for diversity considerations
+        if any(term in content_lower for term in ["user", "customer", "audience", "target"]):
+            cultural_factors.append("Diversity and inclusion")
+            if "diverse" not in content_lower and "inclusive" not in content_lower:
+                potential_issues.append("May not consider diverse user populations")
+                recommendations.append("Consider diverse user populations in design and testing")
+                score -= 0.05
         
         # Determine score level
         if score >= 0.7:
@@ -251,110 +296,76 @@ Provide thorough, nuanced analysis with specific examples and actionable recomme
             score_level = "low"
         
         # Generate reasoning
-        reasoning = f"""
-        Cultural sensitivity analysis for '{feature_name}' in {region}:
-        
-        Overall Assessment: {score_level.upper()} sensitivity level (score: {score:.2f})
-        
-        Cultural Factors Identified: {', '.join(cultural_factors) if cultural_factors else 'Limited cultural factors considered'}
-        
-        Key Considerations:
-        - Language and localization: {'Addressed' if 'Language and localization' in cultural_factors else 'Not addressed'}
-        - Privacy and data protection: {'Addressed' if 'Privacy and data protection' in cultural_factors else 'Not addressed'}
-        - Accessibility and inclusion: {'Addressed' if 'Accessibility and inclusion' in cultural_factors else 'Not addressed'}
-        - Religious considerations: {'Addressed' if 'Religious considerations' in cultural_factors else 'Not addressed'}
-        - Gender considerations: {'Addressed' if 'Gender considerations' in cultural_factors else 'Not addressed'}
-        
-        This analysis is based on rule-based assessment and should be reviewed by cultural experts for the specific region.
-        """
+        reasoning = f"Feature analyzed for US cultural sensitivity. "
+        if cultural_factors:
+            reasoning += f"Key factors considered: {', '.join(cultural_factors)}. "
+        if potential_issues:
+            reasoning += f"Potential issues identified: {len(potential_issues)}. "
+        reasoning += f"Overall assessment: {score_level} cultural sensitivity."
         
         return CulturalSensitivityScore(
-            region=region,
-            overall_score=min(score, 1.0),
+            region="united_states",
+            overall_score=max(0.0, min(1.0, score)),
             score_level=score_level,
             reasoning=reasoning,
             cultural_factors=cultural_factors,
             potential_issues=potential_issues,
             recommendations=recommendations,
-            confidence_score=0.6,  # Lower confidence for rule-based analysis
-            requires_human_review=True
+            confidence_score=0.6,
+            requires_human_review=score < 0.7
         )
     
     def _extract_json_from_response(self, response_text: str) -> Dict[str, Any]:
         """Extract JSON from LLM response text"""
-        import re
-        
-        if not response_text or not response_text.strip():
-            return {}
-        
-        # Clean the response text
-        cleaned_text = response_text.strip()
-        
-        # Remove markdown code blocks
-        cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
-        cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
-        cleaned_text = re.sub(r'\n?```\s*$', '', cleaned_text)
-        cleaned_text = cleaned_text.strip()
-        
-        # Try to parse the cleaned JSON directly
         try:
-            return json.loads(cleaned_text)
-        except json.JSONDecodeError:
-            pass
-        
-        # Try to find JSON object in the response
-        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
-        matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
-        
-        if matches:
-            for match in matches:
-                try:
-                    return json.loads(match)
-                except json.JSONDecodeError:
-                    continue
-        
-        # Return default structure if no JSON found
-        return {
-            "overall_score": 0.5,
-            "score_level": "medium",
-            "reasoning": "Unable to parse LLM response",
-            "cultural_factors": [],
-            "potential_issues": ["Analysis parsing failed"],
-            "recommendations": ["Manual review required"],
-            "confidence_score": 0.3,
-            "requires_human_review": True
-        }
+            # Try to find JSON in the response
+            start_idx = response_text.find('{')
+            end_idx = response_text.rfind('}') + 1
+            
+            if start_idx != -1 and end_idx != 0:
+                json_str = response_text[start_idx:end_idx]
+                return json.loads(json_str)
+            else:
+                raise Exception("No JSON found in response")
+        except Exception as e:
+            print(f"⚠️ Failed to extract JSON: {e}")
+            return {
+                "overall_score": 0.5,
+                "score_level": "medium",
+                "reasoning": "Analysis failed - using default values",
+                "cultural_factors": [],
+                "potential_issues": [],
+                "recommendations": [],
+                "confidence_score": 0.3,
+                "requires_human_review": True
+            }
     
-    def get_regional_cultural_factors(self, region: str) -> Dict[str, List[str]]:
-        """Get cultural factors for a specific region"""
-        return self.cultural_factors.get(region, self.cultural_factors["global"])
+    def get_us_cultural_factors(self) -> Dict[str, Dict[str, List[str]]]:
+        """Get US-specific cultural factors"""
+        return self.us_cultural_factors
     
     def get_all_regions(self) -> List[str]:
-        """Get list of all available regions"""
-        return list(self.cultural_factors.keys())
+        """Get list of regions (now focused on US)"""
+        return ["united_states"]
     
     def analyze_feature_for_all_regions(self, feature_name: str, feature_description: str, 
                                       feature_content: str) -> Dict[str, CulturalSensitivityScore]:
-        """Analyze cultural sensitivity for a feature across all regions"""
-        results = {}
+        """
+        Analyze feature for US cultural sensitivity (simplified to focus on US only)
         
-        for region in self.cultural_factors.keys():
-            try:
-                score = self.analyze_cultural_sensitivity(feature_name, feature_description, feature_content, region)
-                results[region] = score
-            except Exception as e:
-                print(f"⚠️ Failed to analyze {region}: {e}")
-                # Create default score for failed analysis
-                results[region] = CulturalSensitivityScore(
-                    region=region,
-                    overall_score=0.5,
-                    score_level="medium",
-                    reasoning=f"Analysis failed: {str(e)}",
-                    cultural_factors=[],
-                    potential_issues=["Analysis error"],
-                    recommendations=["Manual review required"],
-                    confidence_score=0.0,
-                    requires_human_review=True
-                )
+        Args:
+            feature_name: Name of the feature
+            feature_description: Description of the feature
+            feature_content: Detailed content of the feature
+            
+        Returns:
+            Dictionary with US cultural sensitivity analysis
+        """
+        print(f"🇺🇸 Analyzing US cultural sensitivity for feature: {feature_name}")
         
-        return results
+        # Analyze for US only
+        us_analysis = self.analyze_cultural_sensitivity(feature_name, feature_description, feature_content)
+        
+        return {
+            "united_states": us_analysis
+        }
