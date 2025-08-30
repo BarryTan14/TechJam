@@ -32,3 +32,6 @@ export const updateFeatureData = (id: string, featureData: FeatureData) => axios
 export const fetchLogs = (prdId: string) => axios.get(`/api/logs/prd/${prdId}`)
 export const createLog = (log: Log) => axios.post('/api/logs', log)
 export const deleteLog = (id: string) => axios.delete(`/api/logs/${id}`)
+
+// API endpoint for dashboard data
+export const fetchDashboardData = (prdId: string) => axios.get(`/api/prd/${prdId}/dashboard`)

@@ -2,7 +2,7 @@
 from fastapi import FastAPI, HTTPException, status, APIRouter
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
 from pymongo.mongo_client import MongoClient
@@ -10,6 +10,7 @@ from pymongo.server_api import ServerApi
 from bson import ObjectId
 import logging
 import os
+import httpx
 from dotenv import load_dotenv
 
 # Load environment variables
@@ -246,6 +247,8 @@ class PRDResponse(PRDBase):
     ID: str
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    # LangGraph analysis fields
+    langgraph_analysis: Optional[Dict[str, Any]] = None
 
 class FeatureDataBase(BaseModel):
     prd_uuid: str = Field(..., description="UUID from PRD table")
@@ -275,6 +278,27 @@ class LogCreate(LogBase):
 class LogResponse(LogBase):
     uuid: str
     timestamp: Optional[datetime] = None
+
+# LangGraph API Models
+class LangGraphRequest(BaseModel):
+    name: str = Field(..., description="PRD Name")
+    description: str = Field(..., description="PRD Description")
+    content: Optional[str] = Field(None, description="PRD Content (optional)")
+
+class LangGraphResponse(BaseModel):
+    workflow_id: str
+    prd_name: str
+    prd_description: str
+    overall_risk_level: str
+    overall_confidence_score: float
+    total_features_analyzed: int
+    critical_compliance_issues: List[str]
+    summary_recommendations: List[str]
+    non_compliant_states: Dict[str, Any]
+    processing_time: float
+    status: str = "completed"
+
+
 
 # Create API router
 api_router = APIRouter(prefix="/api")
@@ -327,7 +351,7 @@ migrate_existing_data()
 # PRD CRUD Operations
 @api_router.post("/prd", response_model=PRDResponse, status_code=status.HTTP_201_CREATED)
 async def create_prd(prd: PRDCreate):
-    """Create a new PRD"""
+    """Create a new PRD and run LangGraph analysis"""
     try:
         # Generate unique ID
         prd_id = generate_uuid()
@@ -342,9 +366,10 @@ async def create_prd(prd: PRDCreate):
             "updated_at": current_time
         }
         
+        # Save PRD to database
         result = prd_collection.insert_one(prd_data)
         
-        # Log the creation
+        # Log the PRD creation
         log_data = {
             "uuid": generate_uuid(),
             "prd_uuid": prd_id,
@@ -356,7 +381,204 @@ async def create_prd(prd: PRDCreate):
         logs_collection.insert_one(log_data)
         
         logger.info(f"PRD created: {prd_id}")
-        return PRDResponse(**prd_data)
+        
+        # Call LangGraph API for analysis
+        try:
+            logger.info(f"🔍 Starting LangGraph analysis for PRD: {prd.Name}")
+            
+            # Get LangGraph API URL from environment
+            langgraph_url = os.getenv("LANGGRAPH_API_URL", "http://localhost:8000")
+            
+            # Prepare request data for LangGraph
+            langgraph_request_data = {
+                "name": prd.Name,
+                "description": prd.Description,
+                "content": None  # Let LangGraph generate content if needed
+            }
+            
+            # Call LangGraph API
+            async with httpx.AsyncClient(timeout=None) as client:  # No timeout - wait indefinitely
+                response = await client.post(
+                    f"{langgraph_url}/analyze-prd",
+                    json=langgraph_request_data,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    # Parse LangGraph response
+                    langgraph_result = response.json()
+                    
+                    # Prepare analysis data to save in PRD
+                    analysis_data = {
+                        "workflow_id": langgraph_result.get("workflow_id"),
+                        "overall_risk_level": langgraph_result.get("overall_risk_level"),
+                        "overall_confidence_score": langgraph_result.get("overall_confidence_score"),
+                        "total_features_analyzed": langgraph_result.get("total_features_analyzed"),
+                        "critical_compliance_issues": langgraph_result.get("critical_compliance_issues", []),
+                        "summary_recommendations": langgraph_result.get("summary_recommendations", []),
+                        "non_compliant_states": langgraph_result.get("non_compliant_states", {}),
+                        "processing_time": langgraph_result.get("processing_time"),
+                        "analysis_timestamp": current_time,
+                        "status": "completed"
+                    }
+                    
+                    # Update PRD with analysis results
+                    prd_collection.update_one(
+                        {"ID": prd_id},
+                        {"$set": {"langgraph_analysis": analysis_data}}
+                    )
+                    
+                    # Create feature records from feature_compliance_results
+                    feature_compliance_results = langgraph_result.get("feature_compliance_results", [])
+                    if feature_compliance_results:
+                        logger.info(f"📋 Creating {len(feature_compliance_results)} feature records for PRD: {prd.Name}")
+                        
+                        for feature_result in feature_compliance_results:
+                            try:
+                                feature = feature_result.get("feature", {})
+                                
+                                # Prepare feature data
+                                feature_data = {
+                                    "uuid": generate_uuid(),
+                                    "prd_uuid": prd_id,
+                                    "data": {
+                                        "feature_id": feature.get("feature_id"),
+                                        "feature_name": feature.get("feature_name"),
+                                        "feature_description": feature.get("feature_description"),
+                                        "feature_content": feature.get("feature_content"),
+                                        "section": feature.get("section"),
+                                        "priority": feature.get("priority"),
+                                        "complexity": feature.get("complexity"),
+                                        "data_types": feature.get("data_types", []),
+                                        "user_impact": feature.get("user_impact"),
+                                        "technical_requirements": feature.get("technical_requirements", []),
+                                        "compliance_considerations": feature.get("compliance_considerations", []),
+                                        # Compliance analysis results
+                                        "compliance_flags": feature_result.get("compliance_flags", []),
+                                        "risk_level": feature_result.get("risk_level"),
+                                        "confidence_score": feature_result.get("confidence_score"),
+                                        "requires_human_review": feature_result.get("requires_human_review", False),
+                                        "reasoning": feature_result.get("reasoning"),
+                                        "recommendations": feature_result.get("recommendations", []),
+                                        "non_compliant_states": feature_result.get("non_compliant_states", []),
+                                        "state_compliance_scores": feature_result.get("state_compliance_scores", {}),
+                                        "processing_time": feature_result.get("processing_time"),
+                                        "analysis_timestamp": feature_result.get("timestamp")
+                                    },
+                                    "created_at": current_time,
+                                    "updated_at": current_time
+                                }
+                                
+                                # Insert feature record
+                                feature_data_collection.insert_one(feature_data)
+                                
+                                # Log feature creation
+                                feature_log_data = {
+                                    "uuid": generate_uuid(),
+                                    "prd_uuid": prd_id,
+                                    "action": "CREATE_FEATURE_FROM_LANGGRAPH",
+                                    "details": f"Feature '{feature.get('feature_name', 'Unknown')}' created from LangGraph analysis",
+                                    "level": "INFO",
+                                    "timestamp": current_time
+                                }
+                                logs_collection.insert_one(feature_log_data)
+                                
+                                logger.info(f"✅ Feature created: {feature.get('feature_name', 'Unknown')} (Risk: {feature_result.get('risk_level', 'unknown')})")
+                                
+                            except Exception as feature_error:
+                                logger.error(f"❌ Error creating feature record: {feature_error}")
+                                # Log the feature creation error
+                                error_log_data = {
+                                    "uuid": generate_uuid(),
+                                    "prd_uuid": prd_id,
+                                    "action": "FEATURE_CREATION_ERROR",
+                                    "details": f"Failed to create feature record: {str(feature_error)}",
+                                    "level": "ERROR",
+                                    "timestamp": current_time
+                                }
+                                logs_collection.insert_one(error_log_data)
+                        
+                        logger.info(f"📊 Successfully created {len(feature_compliance_results)} feature records for PRD: {prd.Name}")
+                    else:
+                        logger.info(f"⚠️ No feature_compliance_results found in LangGraph response for PRD: {prd.Name}")
+                    
+                    # Log the successful analysis
+                    analysis_log_data = {
+                        "uuid": generate_uuid(),
+                        "prd_uuid": prd_id,
+                        "action": "LANGGRAPH_ANALYSIS_COMPLETED",
+                        "details": f"LangGraph analysis completed for PRD '{prd.Name}'. Risk: {langgraph_result.get('overall_risk_level', 'unknown')}",
+                        "level": "INFO",
+                        "timestamp": current_time
+                    }
+                    logs_collection.insert_one(analysis_log_data)
+                    
+                    logger.info(f"✅ LangGraph analysis completed for PRD: {prd.Name}")
+                    logger.info(f"📊 Risk Level: {langgraph_result.get('overall_risk_level', 'unknown').upper()}")
+                    logger.info(f"⏱️ Processing Time: {langgraph_result.get('processing_time', 0):.2f}s")
+                    
+                else:
+                    # Log LangGraph API error
+                    error_log_data = {
+                        "uuid": generate_uuid(),
+                        "prd_uuid": prd_id,
+                        "action": "LANGGRAPH_ANALYSIS_FAILED",
+                        "details": f"LangGraph API error: {response.status_code} - {response.text}",
+                        "level": "ERROR",
+                        "timestamp": current_time
+                    }
+                    logs_collection.insert_one(error_log_data)
+                    
+                    logger.error(f"❌ LangGraph API error: {response.status_code} - {response.text}")
+                    
+        except httpx.TimeoutException:
+            # Log timeout error
+            timeout_log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": prd_id,
+                "action": "LANGGRAPH_ANALYSIS_TIMEOUT",
+                "details": f"LangGraph analysis timed out for PRD '{prd.Name}'",
+                "level": "WARNING",
+                "timestamp": current_time
+            }
+            logs_collection.insert_one(timeout_log_data)
+            
+            logger.warning(f"⏰ LangGraph analysis timed out for PRD: {prd.Name}")
+            
+        except httpx.ConnectError:
+            # Log connection error
+            connection_log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": prd_id,
+                "action": "LANGGRAPH_ANALYSIS_CONNECTION_ERROR",
+                "details": f"Cannot connect to LangGraph API for PRD '{prd.Name}'",
+                "level": "WARNING",
+                "timestamp": current_time
+            }
+            logs_collection.insert_one(connection_log_data)
+            
+            logger.warning(f"🔌 Cannot connect to LangGraph API for PRD: {prd.Name}")
+            
+        except Exception as e:
+            # Log general error
+            error_log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": prd_id,
+                "action": "LANGGRAPH_ANALYSIS_ERROR",
+                "details": f"LangGraph analysis error for PRD '{prd.Name}': {str(e)}",
+                "level": "ERROR",
+                "timestamp": current_time
+            }
+            logs_collection.insert_one(error_log_data)
+            
+            logger.error(f"❌ LangGraph analysis error for PRD {prd.Name}: {e}")
+        
+        # Get the final PRD data (including analysis if completed)
+        final_prd = prd_collection.find_one({"ID": prd_id}, {"_id": 0})
+        ensure_timestamps(final_prd)
+        
+        # Return the PRD response (including analysis if completed)
+        return PRDResponse(**final_prd)
         
     except Exception as e:
         logger.error(f"Error creating PRD: {e}")
@@ -394,6 +616,43 @@ async def get_prd(prd_id: str):
     except Exception as e:
         logger.error(f"Error retrieving PRD {prd_id}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to retrieve PRD: {str(e)}")
+
+@api_router.get("/prd/{prd_id}/dashboard")
+async def get_prd_dashboard(prd_id: str):
+    """Get PRD and its associated features for dashboard view"""
+    try:
+        # Get PRD
+        prd = prd_collection.find_one({"ID": prd_id}, {"_id": 0})
+        if not prd:
+            raise HTTPException(status_code=404, detail="PRD not found")
+        
+        # Ensure PRD has required timestamp fields
+        ensure_timestamps(prd)
+        
+        # Get features for this PRD
+        features = list(feature_data_collection.find({"prd_uuid": prd_id}, {"_id": 0}))
+        # Ensure all features have required timestamp fields
+        for feature in features:
+            ensure_timestamps(feature)
+        
+        # Prepare dashboard response
+        dashboard_data = {
+            "prd": prd,
+            "features": features,
+            "total_features": len(features),
+            "features_with_high_risk": len([f for f in features if f.get('data', {}).get('risk_level') == 'high']),
+            "features_with_medium_risk": len([f for f in features if f.get('data', {}).get('risk_level') == 'medium']),
+            "features_with_low_risk": len([f for f in features if f.get('data', {}).get('risk_level') == 'low'])
+        }
+        
+        logger.info(f"Dashboard data retrieved for PRD: {prd_id} with {len(features)} features")
+        return dashboard_data
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Error retrieving dashboard data for PRD {prd_id}: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve dashboard data: {str(e)}")
 
 @api_router.put("/prd/{prd_id}", response_model=PRDResponse)
 async def update_prd(prd_id: str, prd_update: PRDUpdate):
@@ -769,6 +1028,82 @@ async def delete_log(uuid: str):
         logger.error(f"Error deleting log {uuid}: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to delete log: {str(e)}")
 
+# LangGraph Integration
+@api_router.post("/langgraph/analyze", response_model=LangGraphResponse, status_code=status.HTTP_200_OK)
+async def analyze_prd_with_langgraph(request: LangGraphRequest):
+    """
+    Analyze a PRD using the LangGraph compliance workflow
+    
+    This endpoint calls the LangGraph API to perform comprehensive compliance analysis
+    of a PRD, including risk assessment, compliance issues, and recommendations.
+    """
+    try:
+        # Get LangGraph API URL from environment
+        langgraph_url = os.getenv("LANGGRAPH_API_URL", "http://localhost:8000")
+        
+        logger.info(f"🔍 Calling LangGraph API for PRD analysis: {request.name}")
+        
+        # Prepare request data
+        langgraph_request_data = {
+            "name": request.name,
+            "description": request.description,
+            "content": request.content
+        }
+        
+        # Call LangGraph API
+        async with httpx.AsyncClient(timeout=300.0) as client:  # 5 minute timeout
+            response = await client.post(
+                f"{langgraph_url}/analyze-prd",
+                json=langgraph_request_data,
+                headers={"Content-Type": "application/json"}
+            )
+            
+            if response.status_code != 200:
+                logger.error(f"LangGraph API error: {response.status_code} - {response.text}")
+                raise HTTPException(
+                    status_code=response.status_code,
+                    detail=f"LangGraph API error: {response.text}"
+                )
+            
+            # Parse response
+            langgraph_result = response.json()
+            
+            # Log the analysis
+            log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": request.name,  # Using name as identifier for now
+                "action": "LANGGRAPH_ANALYSIS",
+                "details": f"PRD '{request.name}' analyzed with LangGraph. Risk: {langgraph_result.get('overall_risk_level', 'unknown')}",
+                "level": "INFO",
+                "timestamp": get_current_timestamp()
+            }
+            logs_collection.insert_one(log_data)
+            
+            logger.info(f"✅ LangGraph analysis completed for: {request.name}")
+            logger.info(f"📊 Risk Level: {langgraph_result.get('overall_risk_level', 'unknown').upper()}")
+            logger.info(f"⏱️ Processing Time: {langgraph_result.get('processing_time', 0):.2f}s")
+            
+            return LangGraphResponse(**langgraph_result)
+            
+    except httpx.TimeoutException:
+        logger.error(f"❌ LangGraph API timeout for PRD: {request.name}")
+        raise HTTPException(
+            status_code=408,
+            detail="LangGraph analysis timed out. Please try again."
+        )
+    except httpx.ConnectError:
+        logger.error(f"❌ Cannot connect to LangGraph API")
+        raise HTTPException(
+            status_code=503,
+            detail="LangGraph service is unavailable. Please check if the LangGraph server is running."
+        )
+    except Exception as e:
+        logger.error(f"❌ Error calling LangGraph API: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to analyze PRD with LangGraph: {str(e)}"
+        )
+
 # Health check endpoint
 @app.get("/health")
 async def health_check():
@@ -785,6 +1120,10 @@ async def health_check():
                     "PRD": prd_collection.count_documents({}),
                     "feature_data": feature_data_collection.count_documents({}),
                     "logs": logs_collection.count_documents({})
+                },
+                "features_per_prd": {
+                    "total_features": feature_data_collection.count_documents({}),
+                    "prds_with_features": len(prd_collection.distinct("ID", {"langgraph_analysis": {"$exists": True}}))
                 }
             }
         else:
@@ -798,6 +1137,10 @@ async def health_check():
                     "PRD": prd_collection.count_documents({}),
                     "feature_data": feature_data_collection.count_documents({}),
                     "logs": logs_collection.count_documents({})
+                },
+                "features_per_prd": {
+                    "total_features": feature_data_collection.count_documents({}),
+                    "prds_with_features": len(prd_collection.distinct("ID", {"langgraph_analysis": {"$exists": True}}))
                 },
                 "note": "Running in offline mode - data is not persisted"
             }

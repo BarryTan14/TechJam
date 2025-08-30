@@ -39,7 +39,7 @@ const tableCol = (onEditDetail: (detail: PrdData) => void, onDelete: (detail: Pr
     key: "Actions",
     render: (_: any, record: PrdData) => (
       <div key={record.ID} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-        <Button style={{ marginRight: "3px" }} onClick={() => { window.location.href = "./dashboard" }}>
+        <Button style={{ marginRight: "3px" }} onClick={() => { window.location.href = `./dashboard?prdId=${record.ID}` }}>
           View Dashboard
         </Button>
         <Button onClick={() => onEditDetail(record)}>
