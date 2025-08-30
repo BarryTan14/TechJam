@@ -28,12 +28,15 @@ from agents import (
     PRDParserAgent,
     USStateComplianceAgent,
     NonCompliantStatesAnalyzerAgent,
+    OptimizedStateAnalyzer,
+    state_regulations_cache,
     AgentOutput,
     ExtractedFeature,
     FeatureComplianceResult,
     PRDAnalysisResult,
     USStateCompliance,
-    StateComplianceScore
+    StateComplianceScore,
+    BatchAnalysisResult
 )
 
 @dataclass
@@ -98,6 +101,10 @@ class ComplianceWorkflow:
         self.quality_assurance = QualityAssuranceAgent(self.llm)
         self.us_state_compliance = USStateComplianceAgent(self.llm)
         self.non_compliant_states_analyzer = NonCompliantStatesAnalyzerAgent(self.llm)
+        
+        # Initialize optimized state analyzer
+        self.optimized_state_analyzer = OptimizedStateAnalyzer(self.llm)
+        self.state_cache = state_regulations_cache
     
     def setup_llm(self):
         """Setup LLM with fallback models"""
@@ -362,7 +369,7 @@ class ComplianceWorkflow:
         )
     
     def run_workflow(self, prd_data: Dict[str, Any]) -> WorkflowState:
-        """Run the complete workflow"""
+        """Run the complete workflow with state-centric analysis"""
         print(f"\n🚀 Starting Multi-Agent PRD Analysis Workflow for: {prd_data['prd_name']}")
         print("=" * 80)
         
@@ -381,62 +388,112 @@ class ComplianceWorkflow:
         
         print(f"✅ Extracted {len(state.extracted_features)} features from PRD")
         
-        # Step 2: Analyze each feature
-        print(f"\n🔍 Step 2: Analyzing {len(state.extracted_features)} features...")
-        for i, feature in enumerate(state.extracted_features, 1):
-            print(f"\n📊 Feature {i}/{len(state.extracted_features)}: {feature.feature_name}")
-            feature_result = self.analyze_single_feature(feature)
-            state.feature_compliance_results.append(feature_result)
+        # Step 2: Analyze each state against all features
+        print(f"\n🇺🇸 Step 2: Analyzing each state against {len(state.extracted_features)} features...")
+        state_analysis_results = self.analyze_states_against_features(state.extracted_features)
         
-        # Step 3: Generate overall results
-        print(f"\n📈 Step 3: Generating overall results...")
-        self._generate_overall_results(state)
+        # Step 3: Convert state-centric results to feature-centric format for backward compatibility
+        print(f"\n🔄 Step 3: Converting results to feature-centric format...")
+        state.feature_compliance_results = self.convert_state_results_to_feature_results(
+            state.extracted_features, state_analysis_results
+        )
+        
+        # Step 4: Generate overall results
+        print(f"\n📈 Step 4: Generating overall results...")
+        self._generate_overall_results(state, state_analysis_results)
         
         # Save results
-        self.save_workflow_results(state, state.state_analysis_results)
+        self.save_workflow_results(state, state_analysis_results)
         
         return state
     
-    def _generate_overall_results(self, state: WorkflowState):
-        """Generate overall results from all feature analyses"""
+    def _generate_overall_results(self, state: WorkflowState, state_analysis_results: Dict[str, Dict[str, Any]]):
+        """Generate overall results from state-centric analysis"""
         
-        # Calculate overall risk level
-        risk_levels = [result.risk_level for result in state.feature_compliance_results]
-        if "critical" in risk_levels:
-            overall_risk = "critical"
-        elif "high" in risk_levels:
-            overall_risk = "high"
-        elif "medium" in risk_levels:
-            overall_risk = "medium"
+        # Store state analysis results
+        state.state_analysis_results = state_analysis_results
+        
+        # Calculate overall risk level from state analysis
+        if state_analysis_results:
+            state_risk_levels = [state_data.get("overall_risk_level", "low") for state_data in state_analysis_results.values()]
+            if "high" in state_risk_levels:
+                overall_risk = "high"
+            elif "medium" in state_risk_levels:
+                overall_risk = "medium"
+            else:
+                overall_risk = "low"
         else:
-            overall_risk = "low"
+            # Fallback to feature-based calculation
+            risk_levels = [result.risk_level for result in state.feature_compliance_results]
+            if "critical" in risk_levels:
+                overall_risk = "critical"
+            elif "high" in risk_levels:
+                overall_risk = "high"
+            elif "medium" in risk_levels:
+                overall_risk = "medium"
+            else:
+                overall_risk = "low"
         
         state.overall_risk_level = overall_risk
         
         # Calculate overall confidence
-        total_confidence = sum(result.confidence_score for result in state.feature_compliance_results)
-        state.overall_confidence_score = total_confidence / len(state.feature_compliance_results) if state.feature_compliance_results else 0.0
+        if state_analysis_results:
+            # Calculate from state analysis
+            state_risk_scores = [state_data.get("overall_risk_score", 0.5) for state_data in state_analysis_results.values()]
+            avg_risk_score = sum(state_risk_scores) / len(state_risk_scores) if state_risk_scores else 0.5
+            state.overall_confidence_score = 1.0 - avg_risk_score  # Convert risk to confidence
+        else:
+            # Fallback to feature-based calculation
+            total_confidence = sum(result.confidence_score for result in state.feature_compliance_results)
+            state.overall_confidence_score = total_confidence / len(state.feature_compliance_results) if state.feature_compliance_results else 0.0
         
-        # Collect critical issues
+        # Collect critical issues from state analysis
         critical_issues = []
-        for result in state.feature_compliance_results:
-            if result.risk_level in ["high", "critical"]:
-                critical_issues.append(f"{result.feature.feature_name}: {result.risk_level} risk")
+        if state_analysis_results:
+            for state_code, state_data in state_analysis_results.items():
+                if state_data.get("overall_risk_level") == "high":
+                    non_compliant_count = state_data.get("non_compliant_features", 0)
+                    critical_issues.append(f"{state_data.get('state_name', state_code)}: {non_compliant_count} non-compliant features")
+        else:
+            # Fallback to feature-based calculation
+            for result in state.feature_compliance_results:
+                if result.risk_level in ["high", "critical"]:
+                    critical_issues.append(f"{result.feature.feature_name}: {result.risk_level} risk")
         
         state.critical_compliance_issues = critical_issues
         
-        # Collect summary recommendations
+        # Collect summary recommendations from state analysis
         all_recommendations = []
-        for result in state.feature_compliance_results:
-            all_recommendations.extend(result.recommendations)
+        if state_analysis_results:
+            for state_code, state_data in state_analysis_results.items():
+                for feature_data in state_data.get("features", []):
+                    all_recommendations.extend(feature_data.get("required_actions", []))
+        else:
+            # Fallback to feature-based calculation
+            for result in state.feature_compliance_results:
+                all_recommendations.extend(result.recommendations)
         
         # Remove duplicates and limit
         unique_recommendations = list(set(all_recommendations))
         state.summary_recommendations = unique_recommendations[:10]  # Top 10 recommendations
         
-        # Generate non-compliant states dictionary using dedicated agent
-        non_compliant_states_analysis = self.non_compliant_states_analyzer.analyze_non_compliant_states(state.feature_compliance_results)
-        state.non_compliant_states_dict = non_compliant_states_analysis.analysis_result.get("non_compliant_states_dict", {})
+        # Generate non-compliant states dictionary from state analysis
+        if state_analysis_results:
+            state.non_compliant_states_dict = {}
+            for state_code, state_data in state_analysis_results.items():
+                if state_data.get("non_compliant_features", 0) > 0:
+                    state.non_compliant_states_dict[state_code] = {
+                        "state_name": state_data.get("state_name", ""),
+                        "risk_score": state_data.get("overall_risk_score", 0.5),
+                        "risk_level": state_data.get("overall_risk_level", "low"),
+                        "non_compliant_features": state_data.get("non_compliant_features", 0),
+                        "compliance_rate": state_data.get("compliance_rate", 0.0),
+                        "features": state_data.get("features", [])
+                    }
+        else:
+            # Fallback to feature-based calculation
+            non_compliant_states_analysis = self.non_compliant_states_analyzer.analyze_non_compliant_states(state.feature_compliance_results)
+            state.non_compliant_states_dict = non_compliant_states_analysis.analysis_result.get("non_compliant_states_dict", {})
         
         state.end_time = datetime.now().isoformat()
         state.total_processing_time = (datetime.now() - datetime.fromisoformat(state.start_time)).total_seconds()
@@ -466,6 +523,7 @@ class ComplianceWorkflow:
                 "feature_compliance_results": [
                     {
                         "feature": asdict(result.feature),
+                        "agent_outputs": {name: asdict(output) for name, output in result.agent_outputs.items()},
                         "compliance_flags": result.compliance_flags,
                         "risk_level": result.risk_level,
                         "confidence_score": result.confidence_score,
@@ -473,6 +531,7 @@ class ComplianceWorkflow:
                         "reasoning": result.reasoning,
                         "recommendations": result.recommendations,
                         "non_compliant_states": result.non_compliant_states,
+                        "us_state_compliance": [asdict(compliance) for compliance in result.us_state_compliance],
                         "state_compliance_scores": {
                             state_code: asdict(score_data) 
                             for state_code, score_data in result.state_compliance_scores.items()
@@ -505,6 +564,195 @@ class ComplianceWorkflow:
             
         except Exception as e:
             print(f"❌ Failed to save results: {e}")
+    
+    def analyze_states_against_features(self, features: List[ExtractedFeature]) -> Dict[str, Dict[str, Any]]:
+        """
+        Analyze each state against all features - OPTIMIZED VERSION
+        
+        Args:
+            features: List of extracted features
+            
+        Returns:
+            Dictionary with state codes as keys and analysis results as values
+        """
+        print(f"\n🚀 Using Optimized State Analyzer for {len(features)} features across all states...")
+        
+        # Use the optimized state analyzer
+        batch_result = self.optimized_state_analyzer.analyze_features_against_states(features)
+        
+        # Convert BatchAnalysisResult to the expected format
+        state_analysis = {}
+        
+        for state_code, state_results in batch_result.state_results.items():
+            if not state_results:
+                continue
+                
+            # Calculate overall state risk
+            state_risk_scores = [result.risk_score for result in state_results]
+            avg_risk_score = sum(state_risk_scores) / len(state_risk_scores) if state_risk_scores else 0.5
+            
+            # Determine overall state risk level
+            if avg_risk_score >= 0.8:
+                overall_risk_level = "high"
+            elif avg_risk_score >= 0.6:
+                overall_risk_level = "medium"
+            else:
+                overall_risk_level = "low"
+            
+            # Count non-compliant features
+            non_compliant_features = [result for result in state_results if not result.is_compliant]
+            
+            # Convert state results to expected format
+            state_features = []
+            for result in state_results:
+                state_features.append({
+                    "feature": {
+                        "feature_id": result.feature_id,
+                        "feature_name": result.feature_name,
+                        "feature_description": "",  # Will be filled from original feature
+                        "feature_content": "",
+                        "section": "",
+                        "priority": "",
+                        "complexity": "",
+                        "data_types": [],
+                        "user_impact": "",
+                        "technical_requirements": [],
+                        "compliance_considerations": []
+                    },
+                    "risk_score": result.risk_score,
+                    "risk_level": result.risk_level,
+                    "reasoning": result.reasoning,
+                    "is_compliant": result.is_compliant,
+                    "non_compliant_regulations": result.non_compliant_regulations,
+                    "required_actions": result.required_actions,
+                    "confidence_score": result.confidence_score
+                })
+            
+            state_analysis[state_code] = {
+                "state_name": state_results[0].state_name if state_results else "",
+                "state_code": state_code,
+                "overall_risk_score": avg_risk_score,
+                "overall_risk_level": overall_risk_level,
+                "total_features": len(features),
+                "non_compliant_features": len(non_compliant_features),
+                "compliance_rate": (len(features) - len(non_compliant_features)) / len(features) if features else 0.0,
+                "features": state_features
+            }
+        
+        print(f"✅ Optimized analysis complete in {batch_result.processing_time:.2f}s")
+        print(f"📊 Overall stats: {batch_result.overall_stats['total_analyses']} analyses, "
+              f"{batch_result.overall_stats['compliance_rate']:.1%} compliance rate")
+        
+        return state_analysis
+    
+    # Removed: analyze_all_features_for_state - replaced by OptimizedStateAnalyzer
+    
+    # Removed: Old individual analysis methods - replaced by OptimizedStateAnalyzer
+    
+    def get_state_regulations(self, state_code: str) -> Dict[str, Any]:
+        """
+        Get regulations for a specific state using the centralized cache
+        
+        Args:
+            state_code: State code (e.g., "CA")
+            
+        Returns:
+            Dictionary containing state regulations
+        """
+        state_regulation = self.state_cache.get_state_regulation(state_code)
+        if state_regulation:
+            return {
+                "name": state_regulation.state_name,
+                "regulations": state_regulation.regulations,
+                "risk_level": state_regulation.risk_level,
+                "enforcement_level": state_regulation.enforcement_level,
+                "key_requirements": state_regulation.key_requirements,
+                "penalties": state_regulation.penalties,
+                "effective_date": state_regulation.effective_date,
+                "notes": state_regulation.notes
+            }
+        else:
+            return {"name": "Unknown", "regulations": []}
+    
+    def convert_state_results_to_feature_results(self, features: List[ExtractedFeature], 
+                                               state_analysis: Dict[str, Dict[str, Any]]) -> List[FeatureComplianceResult]:
+        """
+        Convert state-centric results back to feature-centric format for backward compatibility
+        
+        Args:
+            features: List of extracted features
+            state_analysis: State-centric analysis results
+            
+        Returns:
+            List of FeatureComplianceResult objects
+        """
+        feature_results = []
+        
+        for feature in features:
+            # Collect all state results for this feature
+            feature_state_results = []
+            non_compliant_states = []
+            state_compliance_scores = {}
+            
+            for state_code, state_data in state_analysis.items():
+                # Find this feature in the state's feature list
+                feature_in_state = None
+                for f in state_data.get("features", []):
+                    if f.get("feature", {}).get("feature_id") == feature.feature_id:
+                        feature_in_state = f
+                        break
+                
+                if feature_in_state:
+                    feature_state_results.append(feature_in_state)
+                    
+                    # Track non-compliant states
+                    if not feature_in_state.get("is_compliant", True):
+                        non_compliant_states.append(state_code)
+                    
+                    # Create state compliance score
+                    state_compliance_scores[state_code] = StateComplianceScore(
+                        state_code=state_code,
+                        state_name=state_data.get("state_name", ""),
+                        compliance_score=1.0 if feature_in_state.get("is_compliant", True) else 0.0,
+                        risk_level=feature_in_state.get("risk_level", "medium"),
+                        reasoning=feature_in_state.get("reasoning", ""),
+                        non_compliant_regulations=feature_in_state.get("non_compliant_regulations", []),
+                        required_actions=feature_in_state.get("required_actions", []),
+                        notes=""
+                    )
+            
+            # Calculate overall feature risk
+            if feature_state_results:
+                risk_scores = [f.get("risk_score", 0.5) for f in feature_state_results]
+                avg_risk_score = sum(risk_scores) / len(risk_scores)
+                
+                if avg_risk_score >= 0.8:
+                    overall_risk_level = "high"
+                elif avg_risk_score >= 0.6:
+                    overall_risk_level = "medium"
+                else:
+                    overall_risk_level = "low"
+                
+                # Create FeatureComplianceResult
+                feature_result = FeatureComplianceResult(
+                    feature=feature,
+                    agent_outputs={},  # Empty dict since this is converted from state analysis
+                    compliance_flags=[],  # Will be populated from regulation matching
+                    risk_level=overall_risk_level,
+                    confidence_score=0.8,  # Default confidence
+                    requires_human_review=overall_risk_level in ["high", "critical"],
+                    reasoning=f"Feature analyzed across {len(feature_state_results)} states. {len(non_compliant_states)} non-compliant states.",
+                    recommendations=[],  # Will be populated from analysis
+                    us_state_compliance=[],  # Empty list since this is converted from state analysis
+                    non_compliant_states=non_compliant_states,
+                    state_compliance_scores=state_compliance_scores,
+                    processing_time=0.0,  # Will be calculated
+                    timestamp=datetime.now().isoformat()
+                )
+                
+                feature_results.append(feature_result)
+        
+        return feature_results
 
 def main():
     """Main function to run the workflow"""

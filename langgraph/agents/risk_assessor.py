@@ -18,82 +18,57 @@ class RiskAssessorAgent:
         """Assess compliance risks based on feature analysis and regulation matching"""
         start_time = datetime.now()
         
-        print(f"\n⚠️  [Risk Assessor] Assessing risks for: {feature_name}")
-        
-        # Create prompt for risk assessment
-        prompt = f"""
-        You are a risk assessment expert evaluating compliance risks.
-        
-        Based on the feature analysis and regulation matching, assess compliance risks:
-        
-        Feature Analysis: {json.dumps(feature_analysis, indent=2)}
-        Regulation Matching: {json.dumps(regulation_matching, indent=2)}
-        
-        IMPORTANT: Respond ONLY with valid JSON. Do not include any other text, explanations, or markdown formatting.
-        
-        Provide your risk assessment in this exact JSON format:
+        # Optimized prompt - more concise and focused
+        prompt = f"""Assess compliance risks:
+
+Feature: {feature_name}
+Analysis: {json.dumps(feature_analysis, indent=2)}
+Regulations: {json.dumps(regulation_matching, indent=2)}
+
+Return JSON:
+{{
+    "overall_risk_level": "low|medium|high|critical",
+    "risk_factors": [
         {{
-            "overall_risk_level": "low|medium|high|critical",
-            "risk_factors": [
-                {{
-                    "factor": "data_collection_scope",
-                    "risk_level": "low|medium|high",
-                    "description": "explanation of the risk factor"
-                }}
-            ],
-            "compliance_gaps": [
-                {{
-                    "gap": "missing_consent_mechanism",
-                    "severity": "low|medium|high|critical",
-                    "description": "description of the compliance gap"
-                }}
-            ],
-            "mitigation_recommendations": [
-                "implement_explicit_consent",
-                "add_data_minimization",
-                "establish_user_rights_portal"
-            ],
-            "confidence_score": 0.0-1.0,
-            "requires_human_review": true/false
+            "factor": "data_collection_scope",
+            "risk_level": "low|medium|high",
+            "description": "explanation"
         }}
-        """
+    ],
+    "compliance_gaps": [
+        {{
+            "gap": "missing_consent_mechanism",
+            "severity": "low|medium|high|critical",
+            "description": "description"
+        }}
+    ],
+    "mitigation_recommendations": ["implement_explicit_consent"],
+    "confidence_score": 0.0-1.0,
+    "requires_human_review": true/false
+}}"""
         
         # Execute risk assessment
         if self.llm:
             try:
-                print(f"🤖 Using LLM for risk assessment...")
                 response = self.llm.generate_content(prompt)
                 
                 if not response or not response.text:
                     raise Exception("LLM returned empty response")
                 
-                print(f"📝 LLM Response received ({len(response.text)} characters)")
-                print(f"📄 Raw response preview: {response.text[:100]}...")
-                
-                # Check if response is empty or just whitespace
-                if not response.text.strip():
-                    raise Exception("LLM returned empty or whitespace-only response")
-                
                 # Try to parse JSON response
                 try:
                     analysis_result = json.loads(response.text)
                     thought_process = "Used LLM to assess compliance risks and identify gaps"
-                    print(f"✅ JSON parsing successful")
-                except json.JSONDecodeError as json_error:
-                    print(f"⚠️  JSON parsing failed: {json_error}")
-                    print(f"📄 Raw response: {response.text[:200]}...")
-                    # Try to extract JSON from the response
+                except json.JSONDecodeError:
                     analysis_result = self._extract_json_from_response(response.text)
-                    thought_process = "Used LLM with JSON extraction due to parsing issues"
+                    thought_process = "Used LLM with JSON extraction"
                 
             except Exception as e:
-                print(f"⚠️  LLM risk assessment failed: {e}")
-                print(f"🔍 Error type: {type(e).__name__}")
                 analysis_result = self._fallback_risk_assessment(feature_analysis, regulation_matching)
-                thought_process = "Used fallback pattern matching due to LLM failure"
+                thought_process = f"Used fallback assessment due to LLM failure: {e}"
         else:
             analysis_result = self._fallback_risk_assessment(feature_analysis, regulation_matching)
-            thought_process = "Used fallback pattern matching (no LLM available)"
+            thought_process = "Used fallback assessment (no LLM available)"
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -112,30 +87,21 @@ class RiskAssessorAgent:
             timestamp=datetime.now().isoformat()
         )
         
-        print(f"✅ [Risk Assessor] Completed in {processing_time:.2f}s")
-        print(f"   🚨 Risk level: {analysis_result.get('overall_risk_level', 'unknown')}")
-        print(f"   📊 Confidence: {analysis_result.get('confidence_score', 0):.1%}")
-        
         return agent_output
     
     def _extract_json_from_response(self, response_text: str) -> Dict[str, Any]:
         """Extract JSON from LLM response text"""
         import re
         
-        # Check if response is empty
         if not response_text or not response_text.strip():
             raise Exception("LLM response is empty")
         
         # Clean the response text
         cleaned_text = response_text.strip()
         
-        # Remove markdown code blocks if present
-        if cleaned_text.startswith('```json'):
-            cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
-        elif cleaned_text.startswith('```'):
-            cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
-        
-        # Remove trailing ```
+        # Remove markdown code blocks
+        cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
+        cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
         cleaned_text = re.sub(r'\n?```\s*$', '', cleaned_text)
         cleaned_text = cleaned_text.strip()
         
@@ -145,7 +111,7 @@ class RiskAssessorAgent:
         except json.JSONDecodeError:
             pass
         
-        # Try to find JSON object in the response - more robust pattern
+        # Try to find JSON object in the response
         json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
         matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
         
@@ -163,10 +129,10 @@ class RiskAssessorAgent:
             risk_match = re.search(risk_pattern, cleaned_text)
             overall_risk_level = risk_match.group(1) if risk_match else "medium"
             
-            # Look for risk_score
-            score_pattern = r'"risk_score":\s*([0-9.]+)'
+            # Look for confidence_score
+            score_pattern = r'"confidence_score":\s*([0-9.]+)'
             score_match = re.search(score_pattern, cleaned_text)
-            risk_score = float(score_match.group(1)) if score_match else 0.5
+            confidence_score = float(score_match.group(1)) if score_match else 0.7
             
             # Look for compliance_gaps
             gaps_pattern = r'"compliance_gaps":\s*\[([^\]]+)\]'
@@ -194,9 +160,8 @@ class RiskAssessorAgent:
                     }
                 ],
                 "compliance_gaps": compliance_gaps or ["Missing consent management"],
-                "risk_score": risk_score,
-                "confidence_level": "medium",
-                "recommendations": recommendations or ["Implement consent management", "Establish data retention"]
+                "confidence_score": confidence_score,
+                "mitigation_recommendations": recommendations or ["Implement consent management"]
             }
         except:
             pass
@@ -212,9 +177,8 @@ class RiskAssessorAgent:
                 }
             ],
             "compliance_gaps": ["Missing consent management"],
-            "risk_score": 0.5,
-            "confidence_level": "medium",
-            "recommendations": ["Implement consent management", "Establish data retention"]
+            "confidence_score": 0.7,
+            "mitigation_recommendations": ["Implement consent management"]
         }
     
     def _fallback_risk_assessment(self, feature_analysis: Dict[str, Any], regulation_matching: Dict[str, Any]) -> Dict[str, Any]:

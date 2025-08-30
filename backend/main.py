@@ -408,114 +408,25 @@ async def create_prd(prd: PRDCreate):
                     # Parse LangGraph response
                     langgraph_result = response.json()
                     
-                    # Prepare analysis data to save in PRD
-                    analysis_data = {
-                        "workflow_id": langgraph_result.get("workflow_id"),
-                        "overall_risk_level": langgraph_result.get("overall_risk_level"),
-                        "overall_confidence_score": langgraph_result.get("overall_confidence_score"),
-                        "total_features_analyzed": langgraph_result.get("total_features_analyzed"),
-                        "critical_compliance_issues": langgraph_result.get("critical_compliance_issues", []),
-                        "summary_recommendations": langgraph_result.get("summary_recommendations", []),
-                        "non_compliant_states": langgraph_result.get("non_compliant_states", {}),
-                        "processing_time": langgraph_result.get("processing_time"),
-                        "analysis_timestamp": current_time,
-                        "status": "completed"
-                    }
-                    
-                    # Update PRD with analysis results
+                    # Simply dump the entire LangGraph response into MongoDB
                     prd_collection.update_one(
                         {"ID": prd_id},
-                        {"$set": {"langgraph_analysis": analysis_data}}
+                        {"$set": {"langgraph_analysis": langgraph_result}}
                     )
-                    
-                    # Create feature records from feature_compliance_results
-                    feature_compliance_results = langgraph_result.get("feature_compliance_results", [])
-                    if feature_compliance_results:
-                        logger.info(f"📋 Creating {len(feature_compliance_results)} feature records for PRD: {prd.Name}")
-                        
-                        for feature_result in feature_compliance_results:
-                            try:
-                                feature = feature_result.get("feature", {})
-                                
-                                # Prepare feature data
-                                feature_data = {
-                                    "uuid": generate_uuid(),
-                                    "prd_uuid": prd_id,
-                                    "data": {
-                                        "feature_id": feature.get("feature_id"),
-                                        "feature_name": feature.get("feature_name"),
-                                        "feature_description": feature.get("feature_description"),
-                                        "feature_content": feature.get("feature_content"),
-                                        "section": feature.get("section"),
-                                        "priority": feature.get("priority"),
-                                        "complexity": feature.get("complexity"),
-                                        "data_types": feature.get("data_types", []),
-                                        "user_impact": feature.get("user_impact"),
-                                        "technical_requirements": feature.get("technical_requirements", []),
-                                        "compliance_considerations": feature.get("compliance_considerations", []),
-                                        # Compliance analysis results
-                                        "compliance_flags": feature_result.get("compliance_flags", []),
-                                        "risk_level": feature_result.get("risk_level"),
-                                        "confidence_score": feature_result.get("confidence_score"),
-                                        "requires_human_review": feature_result.get("requires_human_review", False),
-                                        "reasoning": feature_result.get("reasoning"),
-                                        "recommendations": feature_result.get("recommendations", []),
-                                        "non_compliant_states": feature_result.get("non_compliant_states", []),
-                                        "state_compliance_scores": feature_result.get("state_compliance_scores", {}),
-                                        "processing_time": feature_result.get("processing_time"),
-                                        "analysis_timestamp": feature_result.get("timestamp")
-                                    },
-                                    "created_at": current_time,
-                                    "updated_at": current_time
-                                }
-                                
-                                # Insert feature record
-                                feature_data_collection.insert_one(feature_data)
-                                
-                                # Log feature creation
-                                feature_log_data = {
-                                    "uuid": generate_uuid(),
-                                    "prd_uuid": prd_id,
-                                    "action": "CREATE_FEATURE_FROM_LANGGRAPH",
-                                    "details": f"Feature '{feature.get('feature_name', 'Unknown')}' created from LangGraph analysis",
-                                    "level": "INFO",
-                                    "timestamp": current_time
-                                }
-                                logs_collection.insert_one(feature_log_data)
-                                
-                                logger.info(f"✅ Feature created: {feature.get('feature_name', 'Unknown')} (Risk: {feature_result.get('risk_level', 'unknown')})")
-                                
-                            except Exception as feature_error:
-                                logger.error(f"❌ Error creating feature record: {feature_error}")
-                                # Log the feature creation error
-                                error_log_data = {
-                                    "uuid": generate_uuid(),
-                                    "prd_uuid": prd_id,
-                                    "action": "FEATURE_CREATION_ERROR",
-                                    "details": f"Failed to create feature record: {str(feature_error)}",
-                                    "level": "ERROR",
-                                    "timestamp": current_time
-                                }
-                                logs_collection.insert_one(error_log_data)
-                        
-                        logger.info(f"📊 Successfully created {len(feature_compliance_results)} feature records for PRD: {prd.Name}")
-                    else:
-                        logger.info(f"⚠️ No feature_compliance_results found in LangGraph response for PRD: {prd.Name}")
                     
                     # Log the successful analysis
                     analysis_log_data = {
                         "uuid": generate_uuid(),
                         "prd_uuid": prd_id,
                         "action": "LANGGRAPH_ANALYSIS_COMPLETED",
-                        "details": f"LangGraph analysis completed for PRD '{prd.Name}'. Risk: {langgraph_result.get('overall_risk_level', 'unknown')}",
+                        "details": f"LangGraph analysis completed for PRD '{prd.Name}'. Raw response dumped to MongoDB.",
                         "level": "INFO",
                         "timestamp": current_time
                     }
                     logs_collection.insert_one(analysis_log_data)
                     
                     logger.info(f"✅ LangGraph analysis completed for PRD: {prd.Name}")
-                    logger.info(f"📊 Risk Level: {langgraph_result.get('overall_risk_level', 'unknown').upper()}")
-                    logger.info(f"⏱️ Processing Time: {langgraph_result.get('processing_time', 0):.2f}s")
+                    logger.info(f"📊 Raw response dumped to MongoDB")
                     
                 else:
                     # Log LangGraph API error
