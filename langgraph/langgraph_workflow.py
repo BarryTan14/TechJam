@@ -29,6 +29,7 @@ from agents import (
     USStateComplianceAgent,
     NonCompliantStatesAnalyzerAgent,
     OptimizedStateAnalyzer,
+    ExecutiveReportGenerator,
     state_regulations_cache,
     AgentOutput,
     ExtractedFeature,
@@ -64,6 +65,9 @@ class WorkflowState:
     critical_compliance_issues: List[str] = None
     summary_recommendations: List[str] = None
     non_compliant_states_dict: Dict[str, Dict[str, Any]] = None
+    
+    # Executive report
+    executive_report: Optional[Dict[str, Any]] = None
     
     # Workflow metadata
     workflow_id: str = ""
@@ -105,6 +109,9 @@ class ComplianceWorkflow:
         # Initialize optimized state analyzer
         self.optimized_state_analyzer = OptimizedStateAnalyzer(self.llm)
         self.state_cache = state_regulations_cache
+        
+        # Initialize executive report generator
+        self.executive_report_generator = ExecutiveReportGenerator(self.llm)
     
     def setup_llm(self):
         """Setup LLM with fallback models"""
@@ -272,19 +279,16 @@ class ComplianceWorkflow:
                 us_state_compliance_list.append(state_compliance)
                 
                 # Create StateComplianceScore object for the new dictionary
-                # Convert risk level to compliance score (1.0 = fully compliant, 0.0 = non-compliant)
-                risk_level = state_data.get("risk_level", "Low").lower()
-                if state_data.get("is_compliant", True):
-                    compliance_score = 1.0
+                # Calculate compliance score based on risk score (0.0 to 1.0)
+                risk_score = state_data.get("risk_score", 0.5)
+                # Convert risk score to compliance score: 1.0 = fully compliant, 0.0 = non-compliant
+                compliance_score = max(0.0, min(1.0, 1.0 - risk_score))
+                
+                # Determine risk level based on compliance score (only low or high)
+                if compliance_score >= 0.6:
+                    risk_level = "low"
                 else:
-                    # Map risk levels to compliance scores
-                    risk_to_score = {
-                        "critical": 0.0,
-                        "high": 0.2,
-                        "medium": 0.5,
-                        "low": 0.8
-                    }
-                    compliance_score = risk_to_score.get(risk_level, 0.5)
+                    risk_level = "high"
                 
                 # Get reasoning from state data, or generate fallback reasoning
                 reasoning = state_data.get("reasoning", "")
@@ -299,7 +303,7 @@ class ComplianceWorkflow:
                     state_code=state_data.get("state_code", ""),
                     state_name=state_data.get("state_name", ""),
                     compliance_score=compliance_score,
-                    risk_level=state_data.get("risk_level", "Low"),
+                    risk_level=risk_level,
                     reasoning=reasoning,
                     non_compliant_regulations=state_data.get("non_compliant_regulations", []),
                     required_actions=state_data.get("required_actions", []),
@@ -311,7 +315,7 @@ class ComplianceWorkflow:
             print(f"⚠️  Error in feature analysis: {e}")
             # Create fallback results
             compliance_flags = ["GDPR", "CCPA"]
-            risk_level = "medium"
+            risk_level = "high"
             confidence_score = 0.7
             requires_human_review = True
             reasoning = f"Analysis incomplete due to error: {str(e)}"
@@ -341,7 +345,7 @@ class ComplianceWorkflow:
                 state_compliance_score = StateComplianceScore(
                     state_code=state_data["state_code"],
                     state_name=state_data["state_name"],
-                    compliance_score=0.2,  # High risk = low compliance score
+                    compliance_score=0.3,  # High risk = low compliance score (0.0 to 1.0 scale)
                     risk_level="High",
                     reasoning=f"Feature is non-compliant with {state_data['state_name']}'s regulations (CCPA, VCDPA) due to data processing practices. Fallback analysis due to system error.",
                     non_compliant_regulations=["CCPA", "VCDPA"],
@@ -402,6 +406,23 @@ class ComplianceWorkflow:
         print(f"\n📈 Step 4: Generating overall results...")
         self._generate_overall_results(state, state_analysis_results)
         
+        # Step 5: Generate executive report
+        print(f"\n📊 Step 5: Generating executive report...")
+        executive_report = self.executive_report_generator.generate_executive_report(state)
+        state.executive_report = {
+            "report_id": executive_report.report_id,
+            "prd_name": executive_report.prd_name,
+            "generated_at": executive_report.generated_at,
+            "executive_summary": executive_report.executive_summary,
+            "key_findings": executive_report.key_findings,
+            "risk_assessment": executive_report.risk_assessment,
+            "compliance_overview": executive_report.compliance_overview,
+            "recommendations": executive_report.recommendations,
+            "next_steps": executive_report.next_steps
+        }
+        
+        print(f"✅ Executive report generated: {executive_report.report_id}")
+        
         # Save results
         self.save_workflow_results(state, state_analysis_results)
         
@@ -419,7 +440,7 @@ class ComplianceWorkflow:
             if "high" in state_risk_levels:
                 overall_risk = "high"
             elif "medium" in state_risk_levels:
-                overall_risk = "medium"
+                overall_risk = "high"
             else:
                 overall_risk = "low"
         else:
@@ -430,7 +451,7 @@ class ComplianceWorkflow:
             elif "high" in risk_levels:
                 overall_risk = "high"
             elif "medium" in risk_levels:
-                overall_risk = "medium"
+                overall_risk = "high"
             else:
                 overall_risk = "low"
         
@@ -549,7 +570,8 @@ class ComplianceWorkflow:
                     "critical_compliance_issues": state.critical_compliance_issues,
                     "summary_recommendations": state.summary_recommendations,
                     "non_compliant_states_dict": state.non_compliant_states_dict
-                }
+                },
+                "executive_report": state.executive_report
             }
             
             # Create output directory if it doesn't exist
@@ -586,38 +608,43 @@ class ComplianceWorkflow:
         for state_code, state_results in batch_result.state_results.items():
             if not state_results:
                 continue
-                
+            
             # Calculate overall state risk
             state_risk_scores = [result.risk_score for result in state_results]
             avg_risk_score = sum(state_risk_scores) / len(state_risk_scores) if state_risk_scores else 0.5
             
-            # Determine overall state risk level
-            if avg_risk_score >= 0.8:
+            # Determine overall state risk level (only low or high)
+            if avg_risk_score >= 0.6:
                 overall_risk_level = "high"
-            elif avg_risk_score >= 0.6:
-                overall_risk_level = "medium"
             else:
                 overall_risk_level = "low"
             
             # Count non-compliant features
             non_compliant_features = [result for result in state_results if not result.is_compliant]
             
-            # Convert state results to expected format
+            # Convert state results to expected format with detailed feature information
             state_features = []
             for result in state_results:
+                # Find the original feature to get complete information
+                original_feature = None
+                for feature in features:
+                    if feature.feature_id == result.feature_id:
+                        original_feature = feature
+                        break
+                
                 state_features.append({
                     "feature": {
                         "feature_id": result.feature_id,
                         "feature_name": result.feature_name,
-                        "feature_description": "",  # Will be filled from original feature
-                        "feature_content": "",
-                        "section": "",
-                        "priority": "",
-                        "complexity": "",
-                        "data_types": [],
-                        "user_impact": "",
-                        "technical_requirements": [],
-                        "compliance_considerations": []
+                        "feature_description": original_feature.feature_description if original_feature else "",
+                        "feature_content": original_feature.feature_content if original_feature else "",
+                        "section": original_feature.section if original_feature else "",
+                        "priority": original_feature.priority if original_feature else "",
+                        "complexity": original_feature.complexity if original_feature else "",
+                        "data_types": original_feature.data_types if original_feature else [],
+                        "user_impact": original_feature.user_impact if original_feature else "",
+                        "technical_requirements": original_feature.technical_requirements if original_feature else [],
+                        "compliance_considerations": original_feature.compliance_considerations if original_feature else []
                     },
                     "risk_score": result.risk_score,
                     "risk_level": result.risk_level,
@@ -625,7 +652,8 @@ class ComplianceWorkflow:
                     "is_compliant": result.is_compliant,
                     "non_compliant_regulations": result.non_compliant_regulations,
                     "required_actions": result.required_actions,
-                    "confidence_score": result.confidence_score
+                    "confidence_score": result.confidence_score,
+                    "processing_time": result.processing_time
                 })
             
             state_analysis[state_code] = {
@@ -709,12 +737,23 @@ class ComplianceWorkflow:
                     if not feature_in_state.get("is_compliant", True):
                         non_compliant_states.append(state_code)
                     
+                    # Calculate compliance score based on risk score (0.0 to 1.0)
+                    risk_score = feature_in_state.get("risk_score", 0.5)
+                    # Convert risk score to compliance score: 1.0 = fully compliant, 0.0 = non-compliant
+                    compliance_score = max(0.0, min(1.0, 1.0 - risk_score))
+                    
+                    # Determine risk level based on compliance score (only low or high)
+                    if compliance_score >= 0.6:
+                        risk_level = "low"
+                    else:
+                        risk_level = "high"
+                    
                     # Create state compliance score
                     state_compliance_scores[state_code] = StateComplianceScore(
                         state_code=state_code,
                         state_name=state_data.get("state_name", ""),
-                        compliance_score=1.0 if feature_in_state.get("is_compliant", True) else 0.0,
-                        risk_level=feature_in_state.get("risk_level", "medium"),
+                        compliance_score=compliance_score,
+                        risk_level=risk_level,
                         reasoning=feature_in_state.get("reasoning", ""),
                         non_compliant_regulations=feature_in_state.get("non_compliant_regulations", []),
                         required_actions=feature_in_state.get("required_actions", []),
@@ -726,12 +765,48 @@ class ComplianceWorkflow:
                 risk_scores = [f.get("risk_score", 0.5) for f in feature_state_results]
                 avg_risk_score = sum(risk_scores) / len(risk_scores)
                 
-                if avg_risk_score >= 0.8:
+                if avg_risk_score >= 0.6:
                     overall_risk_level = "high"
-                elif avg_risk_score >= 0.6:
-                    overall_risk_level = "medium"
                 else:
                     overall_risk_level = "low"
+                
+                # Collect recommendations from all state analyses
+                all_recommendations = []
+                for state_result in feature_state_results:
+                    # Get required actions from state analysis
+                    required_actions = state_result.get("required_actions", [])
+                    all_recommendations.extend(required_actions)
+                    
+                    # Get non-compliant regulations that need attention
+                    non_compliant_regulations = state_result.get("non_compliant_regulations", [])
+                    if non_compliant_regulations:
+                        for regulation in non_compliant_regulations:
+                            all_recommendations.append(f"Ensure compliance with {regulation}")
+                
+                # Remove duplicates and prioritize recommendations
+                unique_recommendations = []
+                seen_recommendations = set()
+                for rec in all_recommendations:
+                    rec_lower = rec.lower()
+                    if rec_lower not in seen_recommendations:
+                        unique_recommendations.append(rec)
+                        seen_recommendations.add(rec_lower)
+                
+                # Add feature-specific recommendations based on risk level
+                if overall_risk_level == "high":
+                    unique_recommendations.append("Conduct detailed compliance audit")
+                    unique_recommendations.append("Implement additional privacy safeguards")
+                    unique_recommendations.append("Review data processing practices")
+                else:
+                    unique_recommendations.append("Monitor compliance status regularly")
+                    unique_recommendations.append("Update privacy policies if needed")
+                
+                # Add general recommendations
+                if len(non_compliant_states) > 0:
+                    unique_recommendations.append(f"Address compliance issues in {len(non_compliant_states)} states")
+                
+                # Limit to top 10 most important recommendations
+                final_recommendations = unique_recommendations[:10]
                 
                 # Create FeatureComplianceResult
                 feature_result = FeatureComplianceResult(
@@ -740,9 +815,9 @@ class ComplianceWorkflow:
                     compliance_flags=[],  # Will be populated from regulation matching
                     risk_level=overall_risk_level,
                     confidence_score=0.8,  # Default confidence
-                    requires_human_review=overall_risk_level in ["high", "critical"],
+                    requires_human_review=overall_risk_level == "high",
                     reasoning=f"Feature analyzed across {len(feature_state_results)} states. {len(non_compliant_states)} non-compliant states.",
-                    recommendations=[],  # Will be populated from analysis
+                    recommendations=final_recommendations,  # Populated with collected recommendations
                     us_state_compliance=[],  # Empty list since this is converted from state analysis
                     non_compliant_states=non_compliant_states,
                     state_compliance_scores=state_compliance_scores,
