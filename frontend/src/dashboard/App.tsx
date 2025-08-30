@@ -5,7 +5,6 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SetStateAction, useState, useEffect, Key } from 'react';
 import { fetchDashboardData } from '../api';
 import { CheckCircleOutlined, WarningOutlined } from '@ant-design/icons'
-import { scaleQuantize, scaleThreshold } from 'd3-scale';
 
 const signOut = () => {
   localStorage.removeItem("username")
@@ -77,6 +76,7 @@ export default function Dashboard() {
             }));
             
             setFeatureOptions(options);
+            setSelectedFeature(dashboardData.prd.langgraph_analysis.feature_compliance_results[0])
         }
     }, [dashboardData])
 
@@ -121,10 +121,11 @@ export default function Dashboard() {
                 height: 12,
                 borderRadius: '50%',
                 backgroundColor: 
-                    option.priority === 'High' ? 'red' :
-                    option.priority === 'Medium' ? 'orange' :
-                    option.priority === 'Low' ? 'green' :
-                    'gray', // default color for undefined priority
+                Object.values(selectedFeature.state_compliance_scores).map((state) => ({
+                    id: state.state_code,
+                    value: state.compliance_score > 0.4 ? 1 : 0
+                })).filter(state => state.value > 0.4).length > 0  ? 'red' :
+                    'green', // default color for undefined priority
                 }}
             />
             <span>{option.label}</span>
@@ -152,6 +153,7 @@ export default function Dashboard() {
       <Row style={{marginBottom:"10px"}}>
             <Card style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} title={<>Feature: <Select
                 style={{ width: "47%" }}
+                defaultValue={selectedFeature.feature.feature_name}
                 onChange={(value) => {
                     const feature = allFeatues.find((f: { feature: { feature_id: any; feature_name: any; }; }) => f.feature.feature_id === value);
                     setSelectedFeature(feature);
@@ -162,11 +164,11 @@ export default function Dashboard() {
             >
             <Row style={{fontWeight:500}} justify="space-evenly">
                 <Col span={11}>
-                    <b>Description</b>:<br />
+                    <div style={{marginTop: "5px", marginBottom:"5px"}}><b>Description</b>:</div><br />
                     <div>{selectedFeature?.feature.feature_description ?? ""}</div>
                 </Col>
                 <Col span={11} style={{marginLeft: "auto"}} >
-                    <div style={{textAlign:"center", fontSize:"16px"}}>States Compliance</div>
+                    <div style={{textAlign:"center", fontSize:"16px", marginTop: "5px", marginBottom:"5px"}}>States Compliance</div>
                     <Row justify={"center"}>
                         <Col span={10} style={{textAlign:"center"}}>
                             <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '90%', fontSize: "12px" }}>
@@ -281,46 +283,49 @@ export default function Dashboard() {
                 <p>Select a feature to view analysis</p>
                 )}
             </Card>
-                    <Card style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}} title="Executive Report">
-                        {dashboardData.prd?.executive_report ? (
-                            <div>
-                                <p><strong>Report ID:</strong> {dashboardData.prd.executive_report.report_id || 'N/A'}</p>
-                                <p><strong>Generated:</strong> {dashboardData.prd.executive_report.generated_at ? new Date(dashboardData.prd.executive_report.generated_at).toLocaleString() : 'N/A'}</p>
-                                <div style={{ marginTop: '10px' }}>
-                                    <p><strong>Executive Summary:</strong></p>
-                                    <div style={{ 
-                                        fontSize: '12px', 
-                                        maxHeight: '150px', 
-                                        overflowY: 'auto', 
-                                        border: '1px solid #d9d9d9', 
-                                        padding: '8px', 
-                                        borderRadius: '4px',
-                                        backgroundColor: '#fafafa'
-                                    }}>
-                                        {dashboardData.prd.executive_report.executive_summary || 'No summary available'}
-                                    </div>
-                                </div>
-                                <div style={{ marginTop: '10px' }}>
-                                    <p><strong>Key Findings:</strong></p>
-                                    <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
-                                        {dashboardData.prd.executive_report.key_findings?.slice(0, 3).map((finding: string, index: number) => (
-                                            <li key={index}>{finding}</li>
-                                        )) || <li>No findings available</li>}
-                                    </ul>
-                                </div>
-                                <div style={{ marginTop: '10px' }}>
-                                    <p><strong>Next Steps:</strong></p>
-                                    <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
-                                        {dashboardData.prd.executive_report.next_steps?.slice(0, 2).map((step: string, index: number) => (
-                                            <li key={index}>{step}</li>
-                                        )) || <li>No next steps available</li>}
-                                    </ul>
+            <Card style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}} title="Executive Report">
+                    {dashboardData.prd?.executive_report ? (
+                        <div>
+                            <p><strong>Report ID:</strong> {dashboardData.prd.executive_report.report_id || 'N/A'}</p>
+                            <p><strong>Generated:</strong> {dashboardData.prd.executive_report.generated_at ? new Date(dashboardData.prd.executive_report.generated_at).toLocaleString() : 'N/A'}</p>
+                            <div style={{ marginTop: '10px' }}>
+                                <p><strong>Executive Summary:</strong></p>
+                                <div style={{ 
+                                    fontSize: '12px', 
+                                    maxHeight: '150px', 
+                                    overflowY: 'auto', 
+                                    border: '1px solid #d9d9d9', 
+                                    padding: '8px', 
+                                    borderRadius: '4px',
+                                    backgroundColor: '#fafafa'
+                                }}>
+                                    {dashboardData.prd.executive_report.executive_summary || 'No summary available'}
                                 </div>
                             </div>
-                        ) : (
-                            <p>No executive report available</p>
-                        )}
-                    </Card>
+                            <div style={{ marginTop: '10px' }}>
+                                <p><strong>Key Findings:</strong></p>
+                                <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
+                                    {dashboardData.prd.executive_report.key_findings?.slice(0, 3).map((finding: string, index: number) => (
+                                        <li key={index}>{finding}</li>
+                                    )) || <li>No findings available</li>}
+                                </ul>
+                            </div>
+                            <div style={{ marginTop: '10px' }}>
+                                <p><strong>Next Steps:</strong></p>
+                                <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
+                                    {dashboardData.prd.executive_report.next_steps?.slice(0, 2).map((step: string, index: number) => (
+                                        <li key={index}>{step}</li>
+                                    )) || <li>No next steps available</li>}
+                                </ul>
+                            </div>
+                        </div>
+                    ) : (
+                        <p>No executive report available</p>
+                    )}
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <Button>Download</Button>
+                    </div>
+                </Card>
           </Card>
         </Col>
         <Col span={11}>

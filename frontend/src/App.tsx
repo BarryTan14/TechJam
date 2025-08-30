@@ -150,7 +150,7 @@ const ModalForm: React.FC<ModalFormProps> = ({
             <Input 
               placeholder="Enter status (e.g., Draft, Review, Approved)" 
             />
-          </Form.Item>
+          </Form.Item> */}
     </Form>
   )
 }
@@ -200,7 +200,7 @@ export default function App() {
             form.setFieldsValue({
                 Name: prd.Name,
                 Description: prd.Description,
-                Status: prd.Status
+                Status: "Draft"
             });
         } else {
             setIsEdit(false);
@@ -224,6 +224,10 @@ export default function App() {
     };
 
   const onCloseModal = () => {
+      form.resetFields();
+      setCurrentPrd(null);
+      setOpenModal(false);
+      setIsEdit(false);
     setOpenModal(false);
         setIsEdit(false);
         setCurrentPrd(null);
@@ -321,7 +325,7 @@ export default function App() {
                 <ModalForm 
                     form={form} 
                     isEdit={isEdit} 
-                    initialValues={currentPrd || {}}
+                    
                     inputType={inputType}
                     onInputTypeChange={handleInputTypeChange}
                     fileList={fileList}
