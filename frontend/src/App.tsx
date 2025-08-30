@@ -1,4 +1,4 @@
-import { Table, Button, Popconfirm, Row, Modal, Form, Input, message, Descriptions } from "antd";
+import { Table, Button, Popconfirm, Row, Modal, Form, Input, message } from "antd";
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from "react";
