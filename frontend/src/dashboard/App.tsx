@@ -1,76 +1,32 @@
-import { Card, Row, Col, Table, Input, Collapse, CollapseProps, Button, Divider } from 'antd';
+import { Card, Row, Col, Button, Select, Modal } from 'antd';
 import { ResponsiveChoropleth } from '@nivo/geo'
-import countries from '../world_countries.json'
-import { useState } from 'react';
+import countries from '../usa_states.json'
 import { useNavigate } from 'react-router-dom';
+import { SetStateAction, useState } from 'react';
 
-const CollapsableFilter = () => {
-    const [selectedRowKeys, setSelectedRowKeys] = useState<React.Key[]>([])
-
-    // Selection handler
-    const rowSelection = {
-        selectedRowKeys,
-        onChange: (newSelectedRowKeys: React.Key[], selectedRows: any[]) => {
-            setSelectedRowKeys(newSelectedRowKeys);
-        },
-    };
-
-    const collapseItems: CollapseProps['items'] = [
+const options = [
     {
-        key: '1',
-        label: 'Features',
-        children: 
-        <>
-            <Table 
-                columns={[{
-                    title: "Features",
-                    dataIndex: "name"
-                }]}
-                dataSource={[{
-                    "name": "Feature 1"
-                }]}
-                rowSelection={rowSelection}
-            />
-            <Input placeholder='Input Feature ID'/>
-        </>,
+        value: 'jack',
+        label: (
+                <span>Feature 1</span>
+        ),
     },
-    {
-        key: '2',
-        label: 'Region',
-        children: <></>,
-    },
-    {
-        key: '3',
-        label: 'Status',
-        children: <></>,
-    },
-    {
-        key: '4',
-        label: 'Others',
-        children: <></>,
-    },
-    ];
-
-    return (
-        <Collapse items={collapseItems} defaultActiveKey={['1']} />
-    )
-}
-
+]
 
 const sampleHeatMapData = 
     [
         {
-            "id": "USA",
-            "value": 863184
+            "id": "AK",
+            "value": 0.5,
         },
         {
-            "id": "Alaska",
-            "value": 50000
+            "id": "NY",
+            "value": 1,
         },
         {
-            "id": "Hawaii",
-            "value": 450000
-        }
+            "id": "CA",
+            "value": 0,
+        },
     ]
 
 const signOut = () => {
@@ -84,10 +40,23 @@ export default function Dashboard() {
       return
     }
 
+    const [openModal, setOpenModal] = useState(false);
+    const [buttonValue, setButtonValue] = useState("")
+
+    const showModal = (value: SetStateAction<string>) => {
+        setOpenModal(true);
+        setButtonValue(value)
+    };
+
+    const onCloseModal = () => {
+        setOpenModal(false);
+        setButtonValue("")
+    };
+
     const navigate = useNavigate();
 
     return (
-        <div style={{ padding: 24 }}>
+        <div style={{ padding: 20 }}>
             <div style={{display: "flex"}}>
                 <h1 style={{"marginTop": 0}}>DASHBOARD</h1>
                 <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
@@ -96,94 +65,88 @@ export default function Dashboard() {
               <Button style={{ marginRight: '10px' }} onClick={() => navigate('/')}>Go to PRD Form</Button>
               <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
             </div>
-            <Row className="mt-2" justify="space-evenly">
+            <Row justify="space-evenly">
                 <Col span={5}>
-                    <Card title="Filtering">
-                        <CollapsableFilter />
+                    <Card title="PRD" style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}}>
+                        <span> STH STH STH </span>
+                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px" }} >
+                            <Button style={{marginRight:"10px"}}>Upload</Button>
+                        </div>
+                    </Card>
+                    <Card title="Feature" style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}}>
+                       <Select
+                        style={{ width: "100%", marginBottom: "10px" }}
+                        onChange={() => {}}
+                        options={options}
+                        />
+                        <span style={{ display: "block" }}>Name: {}</span>
+                        <span style={{ display: "block" }}>Description: {}</span>
+                        <span style={{ display: "block" }}>Status: {}</span>
+                        <span style={{ display: "block" }}>Latest Update: {}</span>
                     </Card>
                 </Col>
                 <Col span={12}>
-                    <Card>
-                        <div style={{ height: 400 }}>
+                    <Card title="UNITED STATES OF AMERICA" headStyle={{ textAlign: 'center' }}>
+                        <div style={{ height: 365 }}>
                         <ResponsiveChoropleth /* or Choropleth for fixed dimensions */
                             data={sampleHeatMapData}
                             features={countries.features}
-                            margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-                            colors="nivo"
-                            domain={[0, 1000000]}
+                            colors={['#008000', '#FFA500', '#FF0000']}
+                            domain={[0, 1]}
                             unknownColor="#666666"
                             label="properties.name"
                             valueFormat=".2s"
-                            enableGraticule={true}
-                            graticuleLineColor="#dddddd"
                             borderWidth={0.5}
                             borderColor="#152538"
-                            legends={[
-                                {
-                                    anchor: 'bottom-left',
-                                    direction: 'column',
-                                    justify: true,
-                                    translateX: 20,
-                                    translateY: -100,
-                                    itemsSpacing: 0,
-                                    itemWidth: 94,
-                                    itemHeight: 18,
-                                    itemDirection: 'left-to-right',
-                                    itemTextColor: '#444444',
-                                    itemOpacity: 0.85,
-                                    symbolSize: 18
-                                }
-                            ]}
-                            projectionScale={255}
-                            projectionTranslation={[1.48, 1.15]}
+                            projectionScale={515}
+                            projectionTranslation={[2.1, 1.4]}
                         />
+                            <div style={{ position: 'absolute', right: 10, bottom: 10, background: 'white', padding: 10, borderRadius: 6 }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                                <div style={{ width: 15, height: 15, background: '#FF0000', marginRight: 8 }}></div>
+                                    <span>High</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: 4 }}>
+                                <div style={{ width: 15, height: 15, background: '#FFA500', marginRight: 8 }}></div>
+                                    <span>Medium</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center' }}>
+                                <div style={{ width: 15, height: 15, background: '#008000', marginRight: 8 }}></div>
+                                    <span>Low</span>
+                                </div>
+                            </div>
                         </div>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            Analysis HERE
-                        </p>
                     </Card>
                 </Col>
                 <Col span={5}>
-                    <Card>
-                        <h3>PRD</h3>
-                        <Divider></Divider>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            PRD description HERE
-                        </p>
-                        <div style={{marginTop:"50px", marginBottom:"50px"}}></div>
-                        <h3>Feature</h3>
-                        <Divider></Divider>
-                        <p
-                        style={{
-                            border: '0.5px solid #333',
-                            borderRadius: '8px',
-                            padding: '8px',
-                            maxWidth: '100%',
-                            backgroundColor: '#f9f9f9',
-                            boxShadow: '1px 1px 2px rgba(0,0,0,0.1)',
-                        }}>
-                            Feature description HERE
+                    <Card style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}} title="Analysis">
+                        <p>
+                            Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE<br />Analysis HERE
                         </p>
                     </Card>
+                    <Card style={{maxHeight: "40%", overflowY: "scroll"}} title="Recommendation">
+                        <p>
+                            Recommendation HERE
+                        </p>
+                        <div style={{ display: "flex", justifyContent: "center", gap: "16px", marginTop: "5px"}} >
+                            <Button style={{marginRight:"10px"}} onClick={() => showModal('approve')}>Approve</Button><Button onClick={() => showModal('reject')} >Reject</Button>
+                        </div>
+                        <Modal
+                            title="Recommendation(s)"
+                            onCancel={onCloseModal}
+                            onOk={onCloseModal}
+                            visible={openModal}
+                        >
+                            <p>
+                                Feature Name: {} <br />
+                                Agent: {} <br />
+                                Reason of {buttonValue === 'approve' ? 'approval' : "rejection"}: {} <br />
+                                Evidence (optional): <Button>Upload</Button>
+                            </p>
+                        </Modal>
+                    </Card>
                 </Col>
-            </Row>
-            
+            </Row>   
         </div>
     );
 }

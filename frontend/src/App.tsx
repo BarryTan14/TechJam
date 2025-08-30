@@ -1,4 +1,4 @@
-import { Table, Button, Popconfirm, Row, Modal, Form, Input, message } from "antd"
+import { Table, Button, Popconfirm, Row, Modal, Form, Input, message, Descriptions } from "antd";
 import { DeleteOutlined, EditOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useState, useEffect } from "react";
@@ -39,6 +39,9 @@ const tableCol = (onEditDetail: (detail: PrdData) => void, onDelete: (detail: Pr
     key: "Actions",
     render: (_: any, record: PrdData) => (
       <div key={record.ID} style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+        <Button style={{ marginRight: "3px" }} onClick={() => { window.location.href = "./dashboard" }}>
+          View Dashboard
+        </Button>
         <Button onClick={() => onEditDetail(record)}>
           <EditOutlined />
         </Button>
@@ -110,10 +113,12 @@ const ModalForm: React.FC<ModalFormProps> = ({ form, isEdit = false, initialValu
 }
 
 export default function App() {
-    if (!localStorage.getItem("username")) {
-      window.location.href = "./login"
-      return
-    }
+  const [data, setData] = useState([]);
+
+  if (!localStorage.getItem("username")) {
+    window.location.href = "./login";
+    return null;
+  }
 
     const navigate = useNavigate();
     const [openModal, setOpenModal] = useState(false);
@@ -159,8 +164,8 @@ export default function App() {
         setOpenModal(true);
     };
 
-    const onCloseModal = () => {
-        setOpenModal(false);
+  const onCloseModal = () => {
+    setOpenModal(false);
         setIsEdit(false);
         setCurrentPrd(null);
         form.resetFields();
@@ -205,7 +210,10 @@ export default function App() {
 
     const handleEdit = (prd: PrdData) => {
         showModal(prd);
-    };
+    // setEditRecord(null);
+  };
+
+
 
     return (
         <div style={{ padding: 24 }}>
@@ -214,7 +222,7 @@ export default function App() {
               <Button style={{ marginLeft: "auto" }} onClick={() => signOut()}>Sign Out</Button>
             </div>
             <div>
-              <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button>
+              {/* <Button style={{ marginRight: '10px' }} onClick={() => navigate('/dashboard')}>View Dashboard</Button> */}
               <Button onClick={() => navigate('/featureLogs')}>View Logs</Button>
             </div>
             <Row justify="end" style={{marginBottom: "10px"}}>
