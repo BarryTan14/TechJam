@@ -73,12 +73,12 @@ interface ModalFormProps {
     initialValues?: Partial<PrdData>;
 }
 
-const ModalForm: React.FC<ModalFormProps> = ({ form }) => {
+const ModalForm: React.FC<ModalFormProps> = ({ form, isEdit = false, initialValues = {} }) => {
   return (
     <Form 
       form={form}
       layout="vertical"
-      initialValues={form.getFieldsValue}
+      initialValues={initialValues}
     >     
           <Form.Item
             name="Name"
@@ -99,7 +99,7 @@ const ModalForm: React.FC<ModalFormProps> = ({ form }) => {
               placeholder="Please enter description" 
             />
           </Form.Item>
-          {/* <Form.Item
+          <Form.Item
             name="Status"
             label="Status"
             rules={[{ required: true, message: 'Please select the PRD status!' }]}
@@ -107,12 +107,14 @@ const ModalForm: React.FC<ModalFormProps> = ({ form }) => {
             <Input 
               placeholder="Enter status (e.g., Draft, Review, Approved)" 
             />
-          </Form.Item> */}
+          </Form.Item>
     </Form>
   )
 }
 
 export default function App() {
+  const [data, setData] = useState([]);
+
   if (!localStorage.getItem("username")) {
     window.location.href = "./login";
     return null;
@@ -128,7 +130,7 @@ export default function App() {
 
     // Fetch PRDs on component mount
     useEffect(() => {
-        fetchPrdData()
+        fetchPrdData();
     }, []);
 
     const fetchPrdData = async () => {
@@ -152,7 +154,7 @@ export default function App() {
             form.setFieldsValue({
                 Name: prd.Name,
                 Description: prd.Description,
-                Status: "Under Review"
+                Status: prd.Status
             });
         } else {
             setIsEdit(false);
@@ -162,17 +164,17 @@ export default function App() {
         setOpenModal(true);
     };
 
-    const onCloseModal = () => {
-        setOpenModal(false);
+  const onCloseModal = () => {
+    setOpenModal(false);
         setIsEdit(false);
         setCurrentPrd(null);
         form.resetFields();
     };
 
     const handleSubmit = async () => {
-        try { 
-            setLoading(true)
+        try {
             const values = await form.validateFields();
+            
             if (isEdit && currentPrd) {
                 // Update existing PRD
                 await updatePrd(currentPrd.ID, values);
@@ -184,13 +186,12 @@ export default function App() {
                 message.success('PRD created successfully');
                 // Note: Backend automatically logs the creation operation
             }
+            
             onCloseModal();
             fetchPrdData(); // Refresh the table
         } catch (error) {
             console.error('Error submitting PRD:', error);
             message.error('Failed to submit PRD');
-        } finally {
-          setLoading(false)
         }
     };
 
@@ -210,13 +211,9 @@ export default function App() {
     const handleEdit = (prd: PrdData) => {
         showModal(prd);
     // setEditRecord(null);
-    };
+  };
 
-    const resetModalState = () => {
-      form.resetFields();
-      setCurrentPrd(null);
-      setIsEdit(false);
-    };
+
 
     return (
         <div style={{ padding: 24 }}>
@@ -238,14 +235,11 @@ export default function App() {
               onCancel={onCloseModal}
               onOk={handleSubmit}
               okText={isEdit ? "Update" : "Submit"}
-              confirmLoading={loading}
               styles={{
               body: {
                   paddingBottom: 80,
               },
-              }}
-              afterClose={() => resetModalState}
-              >
+              }}>
                 <ModalForm 
                     form={form} 
                     isEdit={isEdit} 

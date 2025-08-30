@@ -18,32 +18,12 @@ class PRDParserAgent:
         """Parse PRD and extract features"""
         start_time = datetime.now()
         
-        # Create optimized prompt for PRD parsing that handles both detailed and concise PRDs
-        prompt = f"""
-Extract features from this PRD content:
+        # Optimized prompt - more concise and focused
+        prompt = f"""Extract features from this PRD:
 
 Name: {prd_name}
 Description: {prd_description}
-Content: {prd_content}
-
-Analyze the content and extract distinct features. A feature can be:
-- A specific functionality or capability
-- A data processing operation
-- A system component
-- A business process
-
-For each feature, provide:
-- feature_id: unique identifier (feature_1, feature_2, etc.)
-- feature_name: clear, descriptive name
-- feature_description: what the feature does
-- feature_content: relevant text from the PRD
-- section: where this feature is described
-- priority: High/Medium/Low
-- complexity: High/Medium/Low
-- data_types: list of data types handled
-- user_impact: how it affects users
-- technical_requirements: technical needs
-- compliance_considerations: compliance issues
+Content: {prd_content[:2000]}{'...' if len(prd_content) > 2000 else ''}
 
 Return JSON with this structure:
 {{
@@ -52,34 +32,44 @@ Return JSON with this structure:
             "feature_id": "feature_1",
             "feature_name": "Feature Name",
             "feature_description": "Brief description",
-            "feature_content": "Relevant content from PRD",
+            "feature_content": "Relevant content",
             "section": "Section name",
-            "priority": "High",
-            "complexity": "Medium",
-            "data_types": ["data_type1", "data_type2"],
+            "priority": "High/Medium/Low",
+            "complexity": "High/Medium/Low",
+            "data_types": ["data_type1"],
             "user_impact": "Impact description",
-            "technical_requirements": ["req1", "req2"],
+            "technical_requirements": ["req1"],
             "compliance_considerations": ["GDPR", "CCPA"]
         }}
     ],
     "total_features": 1,
-    "analysis_summary": "Summary of extracted features"
+    "analysis_summary": "Summary"
 }}
-"""
+
+Focus on distinct functionalities, data operations, and system components. Limit to 10 features maximum."""
         
         # Execute PRD parsing using LLM
-        response = self.llm.generate_content(prompt)
-        
-        if not response or not response.text:
-            raise Exception("LLM returned empty response")
-        
-        # Try to parse JSON response
-        try:
-            analysis_result = json.loads(response.text)
-            thought_process = "Used LLM to parse PRD and extract features"
-        except json.JSONDecodeError:
-            analysis_result = self._extract_json_from_response(response.text)
-            thought_process = "Used LLM with JSON extraction"
+        if self.llm:
+            try:
+                response = self.llm.generate_content(prompt)
+                
+                if not response or not response.text:
+                    raise Exception("LLM returned empty response")
+                
+                # Try to parse JSON response
+                try:
+                    analysis_result = json.loads(response.text)
+                    thought_process = "Used LLM to parse PRD and extract features"
+                except json.JSONDecodeError:
+                    analysis_result = self._extract_json_from_response(response.text)
+                    thought_process = "Used LLM with JSON extraction"
+            except Exception as e:
+                print(f"⚠️ LLM parsing failed: {e}")
+                analysis_result = self._fallback_parsing(prd_content)
+                thought_process = "Used fallback parsing due to LLM failure"
+        else:
+            analysis_result = self._fallback_parsing(prd_content)
+            thought_process = "Used fallback parsing (no LLM available)"
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -90,7 +80,7 @@ Return JSON with this structure:
             input_data={
                 "prd_name": prd_name,
                 "prd_description": prd_description,
-                "prd_content": prd_content
+                "prd_content_length": len(prd_content)
             },
             thought_process=thought_process,
             analysis_result=analysis_result,
@@ -105,20 +95,15 @@ Return JSON with this structure:
         """Extract JSON from LLM response text"""
         import re
         
-        # Check if response is empty
         if not response_text or not response_text.strip():
             raise Exception("LLM response is empty")
         
         # Clean the response text
         cleaned_text = response_text.strip()
         
-        # Remove markdown code blocks if present
-        if cleaned_text.startswith('```json'):
-            cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
-        elif cleaned_text.startswith('```'):
-            cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
-        
-        # Remove trailing ```
+        # Remove markdown code blocks
+        cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
+        cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
         cleaned_text = re.sub(r'\n?```\s*$', '', cleaned_text)
         cleaned_text = cleaned_text.strip()
         
@@ -128,7 +113,7 @@ Return JSON with this structure:
         except json.JSONDecodeError:
             pass
         
-        # Try to find JSON object in the response - more robust pattern
+        # Try to find JSON object in the response
         json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
         matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
         
@@ -139,44 +124,18 @@ Return JSON with this structure:
                 except json.JSONDecodeError:
                     continue
         
-        # If still no JSON found, try to extract just the extracted_features array
-        try:
-            # Look for extracted_features pattern
-            features_pattern = r'"extracted_features":\s*\[([^\]]+)\]'
-            features_match = re.search(features_pattern, cleaned_text)
-            if features_match:
-                features_str = features_match.group(1)
-                # Try to extract individual feature objects
-                feature_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
-                feature_matches = re.findall(feature_pattern, features_str, re.DOTALL)
-                
-                extracted_features = []
-                for i, feature_match in enumerate(feature_matches, 1):
-                    try:
-                        feature_data = json.loads(feature_match)
-                        # Ensure required fields exist
-                        if "feature_name" in feature_data:
-                            extracted_features.append(feature_data)
-                    except json.JSONDecodeError:
-                        continue
-                
-                if extracted_features:
-                    return {
-                        "extracted_features": extracted_features,
-                        "total_features": len(extracted_features),
-                        "analysis_summary": f"Extracted {len(extracted_features)} features from PRD"
-                    }
-        except:
-            pass
-        
-        # If no JSON found, create a basic feature from the content
+        # If no JSON found, create a basic feature
+        return self._fallback_parsing(cleaned_text)
+    
+    def _fallback_parsing(self, content: str) -> Dict[str, Any]:
+        """Fallback parsing when LLM fails"""
         return {
             "extracted_features": [
                 {
                     "feature_id": "feature_1",
                     "feature_name": "PRD Feature",
                     "feature_description": "Feature extracted from PRD content",
-                    "feature_content": response_text[:500] + "..." if len(response_text) > 500 else response_text,
+                    "feature_content": content[:500] + "..." if len(content) > 500 else content,
                     "section": "General",
                     "priority": "Medium",
                     "complexity": "Medium",

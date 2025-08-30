@@ -18,75 +18,47 @@ class FeatureAnalyzerAgent:
         """Analyze feature and extract compliance-relevant information"""
         start_time = datetime.now()
         
-        print(f"\n🔍 [Feature Analyzer] Processing feature: {feature_name}")
-        
-        # Create prompt for feature analysis
-        prompt = f"""
-        You are a compliance expert analyzing software features for regulatory requirements.
-        
-        Analyze the following feature and extract compliance-relevant information:
-        
-        Feature Name: {feature_name}
-        Description: {feature_description}
-        Content: {feature_content}
-        
-        IMPORTANT: Respond ONLY with valid JSON. Do not include any other text, explanations, or markdown formatting.
-        
-        Provide your analysis in this exact JSON format:
-        {{
-            "data_types_collected": ["personal_data", "location_data", "biometric_data"],
-            "processing_purposes": ["analytics", "personalization", "advertising"],
-            "data_flows": ["user_input", "cloud_storage", "third_party", "cross_border"],
-            "user_interactions": ["consent_required", "opt_out_available", "data_access"],
-            "technical_implementation": ["encryption", "anonymization", "retention_policy"],
-            "compliance_concerns": ["data_minimization", "purpose_limitation", "consent_management"]
-        }}
-        
-        Analysis steps:
-        1. Identify data types being collected
-        2. Determine processing purposes
-        3. Map data flows and storage
-        4. List user interactions and controls
-        5. Note technical safeguards
-        6. Identify compliance concerns
-        """
+        # Optimized prompt - more concise and focused
+        prompt = f"""Analyze this feature for compliance:
+
+Name: {feature_name}
+Description: {feature_description}
+Content: {feature_content[:1500]}{'...' if len(feature_content) > 1500 else ''}
+
+Return JSON:
+{{
+    "data_types_collected": ["personal_data", "location_data"],
+    "processing_purposes": ["analytics", "personalization"],
+    "data_flows": ["user_input", "cloud_storage"],
+    "user_interactions": ["consent_required", "opt_out_available"],
+    "technical_implementation": ["encryption", "anonymization"],
+    "compliance_concerns": ["data_minimization", "consent_management"]
+}}
+
+Focus on data types, processing purposes, and compliance concerns."""
         
         # Execute analysis
         if self.llm:
             try:
-                print(f"🤖 Using LLM for analysis...")
                 response = self.llm.generate_content(prompt)
                 
                 if not response or not response.text:
                     raise Exception("LLM returned empty response")
                 
-                print(f"📝 LLM Response received ({len(response.text)} characters)")
-                print(f"📄 Raw response preview: {response.text[:100]}...")
-                
-                # Check if response is empty or just whitespace
-                if not response.text.strip():
-                    raise Exception("LLM returned empty or whitespace-only response")
-                
                 # Try to parse JSON response
                 try:
                     analysis_result = json.loads(response.text)
-                    thought_process = "Used LLM to analyze feature structure and extract compliance-relevant information"
-                    print(f"✅ JSON parsing successful")
-                except json.JSONDecodeError as json_error:
-                    print(f"⚠️  JSON parsing failed: {json_error}")
-                    print(f"📄 Raw response: {response.text[:200]}...")
-                    # Try to extract JSON from the response
+                    thought_process = "Used LLM to analyze feature structure"
+                except json.JSONDecodeError:
                     analysis_result = self._extract_json_from_response(response.text)
-                    thought_process = "Used LLM with JSON extraction due to parsing issues"
+                    thought_process = "Used LLM with JSON extraction"
                 
             except Exception as e:
-                print(f"⚠️  LLM analysis failed: {e}")
-                print(f"🔍 Error type: {type(e).__name__}")
                 analysis_result = self._fallback_analysis(feature_content)
-                thought_process = "Used fallback pattern matching due to LLM failure"
+                thought_process = f"Used fallback analysis due to LLM failure: {e}"
         else:
             analysis_result = self._fallback_analysis(feature_content)
-            thought_process = "Used fallback pattern matching (no LLM available)"
+            thought_process = "Used fallback analysis (no LLM available)"
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -97,7 +69,7 @@ class FeatureAnalyzerAgent:
             input_data={
                 "feature_name": feature_name,
                 "feature_description": feature_description,
-                "feature_content": feature_content
+                "content_length": len(feature_content)
             },
             thought_process=thought_process,
             analysis_result=analysis_result,
@@ -106,30 +78,21 @@ class FeatureAnalyzerAgent:
             timestamp=datetime.now().isoformat()
         )
         
-        print(f"✅ [Feature Analyzer] Completed in {processing_time:.2f}s")
-        print(f"   📊 Data types: {analysis_result.get('data_types_collected', [])}")
-        print(f"   🎯 Processing purposes: {analysis_result.get('processing_purposes', [])}")
-        
         return agent_output
     
     def _extract_json_from_response(self, response_text: str) -> Dict[str, Any]:
         """Extract JSON from LLM response text"""
         import re
         
-        # Check if response is empty
         if not response_text or not response_text.strip():
             raise Exception("LLM response is empty")
         
         # Clean the response text
         cleaned_text = response_text.strip()
         
-        # Remove markdown code blocks if present
-        if cleaned_text.startswith('```json'):
-            cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
-        elif cleaned_text.startswith('```'):
-            cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
-        
-        # Remove trailing ```
+        # Remove markdown code blocks
+        cleaned_text = re.sub(r'^```json\s*\n?', '', cleaned_text)
+        cleaned_text = re.sub(r'^```\s*\n?', '', cleaned_text)
         cleaned_text = re.sub(r'\n?```\s*$', '', cleaned_text)
         cleaned_text = cleaned_text.strip()
         
@@ -139,7 +102,7 @@ class FeatureAnalyzerAgent:
         except json.JSONDecodeError:
             pass
         
-        # Try to find JSON object in the response - more robust pattern
+        # Try to find JSON object in the response
         json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
         matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
         
@@ -210,7 +173,7 @@ class FeatureAnalyzerAgent:
             data_types.append("biometric_data")
         
         return {
-            "data_types_collected": data_types,
+            "data_types_collected": data_types or ["personal_data"],
             "processing_purposes": ["analytics", "personalization"],
             "data_flows": ["user_input", "cloud_storage"],
             "user_interactions": ["consent_required"],
