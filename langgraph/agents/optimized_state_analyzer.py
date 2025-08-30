@@ -135,10 +135,10 @@ class OptimizedStateAnalyzer:
             # High-risk states: Use LLM for detailed analysis
             results = self._analyze_high_risk_state(features, state_regulation)
         elif risk_level == "medium":
-            # Medium-risk states: Use pattern matching with LLM fallback
+            # Medium-risk states: Use LLM for analysis
             results = self._analyze_medium_risk_state(features, state_regulation)
         else:
-            # Low-risk states: Use pattern matching only
+            # Low-risk states: Use LLM for analysis
             results = self._analyze_low_risk_state(features, state_regulation)
         
         return results
@@ -146,47 +146,44 @@ class OptimizedStateAnalyzer:
     def _analyze_high_risk_state(self, features: List[ExtractedFeature], 
                                 state_regulation: StateRegulation) -> List[StateAnalysisResult]:
         """Analyze features against high-risk state using LLM"""
-        results = []
+        if not self.llm:
+            raise Exception(f"No LLM available for high-risk state analysis of {state_regulation.state_name}")
         
-        if self.llm:
-            try:
-                # Use batch LLM analysis for efficiency
-                batch_results = self._batch_llm_analysis(features, state_regulation)
-                results = batch_results
-            except Exception as e:
-                print(f"⚠️ LLM analysis failed for {state_regulation.state_name}: {e}")
-                # Fallback to pattern matching
-                results = self._pattern_matching_analysis(features, state_regulation, "high")
-        else:
-            # No LLM available, use pattern matching
-            results = self._pattern_matching_analysis(features, state_regulation, "high")
-        
-        return results
+        try:
+            # Use batch LLM analysis for efficiency
+            results = self._batch_llm_analysis(features, state_regulation)
+            return results
+        except Exception as e:
+            print(f"⚠️ LLM analysis failed for {state_regulation.state_name}: {e}")
+            raise Exception(f"High-risk state analysis failed for {state_regulation.state_name}: {e}")
     
     def _analyze_medium_risk_state(self, features: List[ExtractedFeature], 
                                   state_regulation: StateRegulation) -> List[StateAnalysisResult]:
-        """Analyze features against medium-risk state using pattern matching with LLM fallback"""
-        results = []
+        """Analyze features against medium-risk state using LLM"""
+        if not self.llm:
+            raise Exception(f"No LLM available for medium-risk state analysis of {state_regulation.state_name}")
         
-        # Try pattern matching first
-        results = self._pattern_matching_analysis(features, state_regulation, "medium")
-        
-        # If LLM is available and we have complex features, use LLM for validation
-        if self.llm and self._has_complex_features(features):
-            try:
-                # Use LLM to validate and improve results
-                validated_results = self._validate_with_llm(features, state_regulation, results)
-                results = validated_results
-            except Exception as e:
-                print(f"⚠️ LLM validation failed for {state_regulation.state_name}: {e}")
-                # Keep pattern matching results
-        
-        return results
+        try:
+            # Use batch LLM analysis for efficiency
+            results = self._batch_llm_analysis(features, state_regulation)
+            return results
+        except Exception as e:
+            print(f"⚠️ LLM analysis failed for {state_regulation.state_name}: {e}")
+            raise Exception(f"Medium-risk state analysis failed for {state_regulation.state_name}: {e}")
     
     def _analyze_low_risk_state(self, features: List[ExtractedFeature], 
                                state_regulation: StateRegulation) -> List[StateAnalysisResult]:
-        """Analyze features against low-risk state using pattern matching only"""
-        return self._pattern_matching_analysis(features, state_regulation, "low")
+        """Analyze features against low-risk state using LLM"""
+        if not self.llm:
+            raise Exception(f"No LLM available for low-risk state analysis of {state_regulation.state_name}")
+        
+        try:
+            # Use batch LLM analysis for efficiency
+            results = self._batch_llm_analysis(features, state_regulation)
+            return results
+        except Exception as e:
+            print(f"⚠️ LLM analysis failed for {state_regulation.state_name}: {e}")
+            raise Exception(f"Low-risk state analysis failed for {state_regulation.state_name}: {e}")
     
     def _batch_llm_analysis(self, features: List[ExtractedFeature], 
                            state_regulation: StateRegulation) -> List[StateAnalysisResult]:
@@ -228,16 +225,26 @@ For each feature, provide a detailed analysis including:
 5. **Detailed Reasoning**: Provide comprehensive explanation of findings
 6. **Required Actions**: List specific actions needed for compliance
 
+CRITICAL JSON FORMATTING REQUIREMENTS:
+- Respond ONLY with valid JSON - no additional text, explanations, or markdown
+- Use ONLY standard ASCII characters - no special characters, emojis, or Unicode
+- Use ONLY double quotes for strings - no single quotes or smart quotes
+- Escape all special characters in strings properly
+- Use ONLY "true" or "false" for boolean values - no "True" or "False"
+- Ensure all strings are properly quoted and escaped
+- Remove any trailing commas in objects and arrays
+- Use ONLY standard JSON syntax - no comments or extra formatting
+
 Return JSON with detailed analysis for each feature:
 {{
     "feature_results": [
         {{
             "feature_id": "feature_1",
             "risk_score": 0.3,
-            "risk_level": "low|high",
-            "is_compliant": true/false,
+            "risk_level": "low",
+            "is_compliant": true,
             "non_compliant_regulations": ["regulation_name"],
-                         "required_actions": ["Implement specific compliance measures", "Establish data protection controls", "Create audit procedures"],
+            "required_actions": ["Implement specific compliance measures", "Establish data protection controls", "Create audit procedures"],
             "reasoning": "COMPREHENSIVE ANALYSIS: Include detailed explanation of data types, requirement compliance, risk factors, and specific compliance gaps. Use clear language and provide actionable insights.",
             "confidence_score": 0.8
         }}
@@ -258,7 +265,9 @@ For required_actions, provide specific, actionable recommendations such as:
 - Training and awareness (e.g., "Implement compliance training for development teams")
 - Monitoring and auditing (e.g., "Establish compliance monitoring and reporting procedures")
 
-Make the reasoning comprehensive and business-friendly."""
+Make the reasoning comprehensive and business-friendly.
+
+REMEMBER: Respond with ONLY valid JSON - no other text or formatting."""
         
         try:
             response = self.llm.generate_content(prompt)
@@ -279,9 +288,18 @@ Make the reasoning comprehensive and business-friendly."""
             print(f"📝 LLM Response received for {state_regulation.state_name} ({len(response.text)} characters)")
             print(f"📄 Raw response preview: {response.text[:200]}...")
             
+            # Pre-validate and sanitize the response
+            try:
+                sanitized_response = self._sanitize_llm_response(response.text)
+                print(f"✅ Response sanitization completed successfully")
+            except Exception as sanitize_error:
+                print(f"⚠️ Response sanitization failed: {sanitize_error}")
+                print(f"📄 Original response preview: {response.text[:200]}...")
+                raise Exception(f"Response sanitization failed: {sanitize_error}")
+            
             # Parse JSON response
             try:
-                analysis_result = json.loads(response.text)
+                analysis_result = json.loads(sanitized_response)
                 feature_results = analysis_result.get("feature_results", [])
                 print(f"✅ JSON parsing successful for {state_regulation.state_name}")
             except json.JSONDecodeError as json_error:
@@ -289,9 +307,6 @@ Make the reasoning comprehensive and business-friendly."""
                 print(f"📄 Raw response: {response.text[:500]}...")
                 # Try to extract JSON from response
                 feature_results = self._extract_json_from_response(response.text)
-                if not feature_results:
-                    print(f"⚠️ JSON extraction also failed for {state_regulation.state_name}")
-                    raise Exception(f"Failed to parse or extract JSON from LLM response: {json_error}")
             
             # Validate feature_results
             if not feature_results:
@@ -334,243 +349,11 @@ Make the reasoning comprehensive and business-friendly."""
         except Exception as e:
             print(f"❌ Batch LLM analysis failed for {state_regulation.state_name}: {e}")
             print(f"🔍 Error type: {type(e).__name__}")
-            # Fall back to pattern matching analysis
-            print(f"🔄 Falling back to pattern matching analysis for {state_regulation.state_name}")
-            return self._pattern_matching_analysis(features, state_regulation, "medium")
+            raise Exception(f"Batch LLM analysis failed for {state_regulation.state_name}: {e}")
     
-    def _pattern_matching_analysis(self, features: List[ExtractedFeature], 
-                                  state_regulation: StateRegulation, 
-                                  risk_level: str) -> List[StateAnalysisResult]:
-        """Analyze features using pattern matching rules"""
-        results = []
-        
-        for feature in features:
-            # Analyze feature based on data types and state regulations
-            analysis = self._analyze_feature_patterns(feature, state_regulation, risk_level)
-            
-            state_result = StateAnalysisResult(
-                state_code=state_regulation.state_code,
-                state_name=state_regulation.state_name,
-                feature_id=feature.feature_id,
-                feature_name=feature.feature_name,
-                risk_score=analysis["risk_score"],
-                risk_level=analysis["risk_level"],
-                is_compliant=analysis["is_compliant"],
-                non_compliant_regulations=analysis["non_compliant_regulations"],
-                required_actions=analysis["required_actions"],
-                reasoning=analysis["reasoning"],
-                confidence_score=analysis["confidence_score"],
-                processing_time=0.0
-            )
-            results.append(state_result)
-        
-        return results
+
     
-    def _analyze_feature_patterns(self, feature: ExtractedFeature, 
-                                 state_regulation: StateRegulation, 
-                                 risk_level: str) -> Dict[str, Any]:
-        """Analyze a feature using pattern matching rules with detailed reasoning"""
-        
-        # Initialize analysis
-        risk_score = 0.3  # Base risk score
-        is_compliant = True
-        non_compliant_regulations = []
-        required_actions = []
-        reasoning_parts = []
-        
-        # Start with comprehensive reasoning
-        reasoning_parts.append(f"Analyzing feature '{feature.feature_name}' against {state_regulation.state_name} ({state_regulation.state_code}) regulations")
-        
-        # Check data types and their sensitivity
-        sensitive_data_types = {
-            "personal_identifiable_information": "PII requires strict protection under most privacy laws",
-            "biometric_data": "Biometric data has special protections under laws like BIPA",
-            "health_data": "Health data is protected under HIPAA and state health privacy laws",
-            "financial_data": "Financial data requires additional security measures",
-            "location_data": "Location data can reveal sensitive personal patterns",
-            "behavioral_data": "Behavioral data can be used for profiling and targeting"
-        }
-        
-        feature_data_types = [dt.lower() for dt in feature.data_types]
-        sensitive_data_found = []
-        
-        for data_type in feature_data_types:
-            for sensitive_type, explanation in sensitive_data_types.items():
-                if sensitive_type in data_type:
-                    risk_score += 0.2
-                    sensitive_data_found.append(f"{data_type} ({explanation})")
-        
-        if sensitive_data_found:
-            reasoning_parts.append(f"Feature collects sensitive data types: {', '.join(sensitive_data_found)}")
-        
-        # Analyze state-specific requirements in detail
-        reasoning_parts.append(f"State risk level: {state_regulation.risk_level.upper()}")
-        reasoning_parts.append(f"State enforcement level: {state_regulation.enforcement_level.upper()}")
-        
-        # Check key requirements against feature description
-        feature_text = f"{feature.feature_name} {feature.feature_description}".lower()
-        
-        for requirement in state_regulation.key_requirements:
-            req_lower = requirement.lower()
-            
-            if "consent" in req_lower:
-                if "consent" not in feature_text and "opt-in" not in feature_text and "permission" not in feature_text:
-                    is_compliant = False
-                    non_compliant_regulations.extend(state_regulation.regulations)
-                    required_actions.append("Implement explicit consent mechanisms")
-                    reasoning_parts.append(f"❌ Consent requirement not met: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Consent requirement appears satisfied: {requirement}")
-            
-            elif "deletion" in req_lower or "delete" in req_lower:
-                if "delete" not in feature_text and "remove" not in feature_text and "erase" not in feature_text:
-                    required_actions.append("Implement data deletion rights")
-                    reasoning_parts.append(f"⚠️ Data deletion rights required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data deletion rights appear implemented: {requirement}")
-            
-            elif "access" in req_lower:
-                if "access" not in feature_text and "view" not in feature_text and "retrieve" not in feature_text:
-                    required_actions.append("Implement data access rights")
-                    reasoning_parts.append(f"⚠️ Data access rights required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data access rights appear implemented: {requirement}")
-            
-            elif "portability" in req_lower:
-                if "export" not in feature_text and "download" not in feature_text and "portability" not in feature_text:
-                    required_actions.append("Implement data portability mechanisms")
-                    reasoning_parts.append(f"⚠️ Data portability required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data portability appears implemented: {requirement}")
-            
-            elif "minimization" in req_lower:
-                if "minimal" not in feature_text and "necessary" not in feature_text and "limited" not in feature_text:
-                    required_actions.append("Implement data minimization practices")
-                    reasoning_parts.append(f"⚠️ Data minimization required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Data minimization appears implemented: {requirement}")
-            
-            elif "purpose" in req_lower and "limitation" in req_lower:
-                if "purpose" not in feature_text and "use" not in feature_text:
-                    required_actions.append("Implement purpose limitation controls")
-                    reasoning_parts.append(f"⚠️ Purpose limitation required: {requirement}")
-                else:
-                    reasoning_parts.append(f"✅ Purpose limitation appears implemented: {requirement}")
-        
-        # Check enforcement level impact
-        if state_regulation.enforcement_level == "strict":
-            risk_score += 0.1
-            reasoning_parts.append("⚠️ State has strict enforcement - higher penalties for violations")
-        elif state_regulation.enforcement_level == "moderate":
-            reasoning_parts.append("ℹ️ State has moderate enforcement - standard penalties apply")
-        else:
-            reasoning_parts.append("ℹ️ State has lenient enforcement - lower penalties for violations")
-        
-        # Analyze penalties
-        if state_regulation.penalties:
-            reasoning_parts.append(f"Potential penalties: {', '.join(state_regulation.penalties)}")
-        
-        # Determine final risk level with detailed explanation (only low or high)
-        if risk_score >= 0.6:
-            final_risk_level = "high"
-            risk_explanation = "HIGH RISK: Multiple compliance issues detected with strict state enforcement"
-        else:
-            final_risk_level = "low"
-            risk_explanation = "LOW RISK: Feature appears largely compliant with state requirements"
-        
-        reasoning_parts.append(f"Risk Assessment: {risk_explanation}")
-        
-        # Add compliance summary
-        if is_compliant:
-            compliance_summary = f"✅ Feature is COMPLIANT with {state_regulation.state_name} requirements"
-        else:
-            compliance_summary = f"❌ Feature is NON-COMPLIANT with {state_regulation.state_name} requirements"
-        
-        reasoning_parts.append(compliance_summary)
-        
-        # Add required actions summary
-        if required_actions:
-            reasoning_parts.append(f"Required Actions: {', '.join(required_actions)}")
-        
-        # Add data type specific recommendations
-        data_type_recommendations = []
-        for data_type in feature_data_types:
-            if "personal_identifiable_information" in data_type:
-                data_type_recommendations.extend([
-                    "Implement PII encryption at rest and in transit",
-                    "Establish data retention policies for PII",
-                    "Create PII inventory and mapping"
-                ])
-            elif "biometric_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement biometric data protection measures",
-                    "Obtain explicit consent for biometric processing",
-                    "Establish biometric data deletion procedures"
-                ])
-            elif "health_data" in data_type:
-                data_type_recommendations.extend([
-                    "Ensure HIPAA compliance for health data",
-                    "Implement health data access controls",
-                    "Establish health data breach notification procedures"
-                ])
-            elif "financial_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement PCI DSS compliance measures",
-                    "Establish financial data encryption standards",
-                    "Create financial data access audit trails"
-                ])
-            elif "location_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement location data anonymization",
-                    "Establish location data retention limits",
-                    "Create location data access controls"
-                ])
-            elif "behavioral_data" in data_type:
-                data_type_recommendations.extend([
-                    "Implement behavioral data profiling controls",
-                    "Establish behavioral data opt-out mechanisms",
-                    "Create behavioral data impact assessments"
-                ])
-        
-        # Add unique data type recommendations
-        for rec in data_type_recommendations:
-            if rec not in required_actions:
-                required_actions.append(rec)
-        
-        # Add state-specific recommendations based on enforcement level
-        if state_regulation.enforcement_level == "strict":
-            required_actions.append(f"Implement enhanced compliance monitoring for {state_regulation.state_name}")
-            required_actions.append(f"Establish regular compliance audits for {state_regulation.state_name}")
-        elif state_regulation.enforcement_level == "moderate":
-            required_actions.append(f"Monitor compliance requirements for {state_regulation.state_name}")
-        
-        # Add general compliance recommendations
-        if not is_compliant:
-            required_actions.extend([
-                "Conduct compliance gap analysis",
-                "Update privacy policies and terms of service",
-                "Implement compliance training for development teams",
-                "Establish compliance monitoring and reporting procedures"
-            ])
-        
-        # Adjust confidence based on analysis depth
-        if risk_level == "high":
-            confidence_score = 0.8  # Higher confidence for detailed analysis
-        else:
-            confidence_score = 0.7  # Lower confidence for basic analysis
-        
-        # Combine all reasoning parts
-        detailed_reasoning = "\n".join(reasoning_parts)
-        
-        return {
-            "risk_score": min(risk_score, 1.0),
-            "risk_level": final_risk_level,
-            "is_compliant": is_compliant,
-            "non_compliant_regulations": non_compliant_regulations,
-            "required_actions": required_actions,
-            "reasoning": detailed_reasoning,
-            "confidence_score": confidence_score
-        }
+
     
     def _has_complex_features(self, features: List[ExtractedFeature]) -> bool:
         """Check if any features are complex enough to warrant LLM analysis"""
@@ -583,50 +366,15 @@ Make the reasoning comprehensive and business-friendly."""
         
         return False
     
-    def _validate_with_llm(self, features: List[ExtractedFeature], 
-                          state_regulation: StateRegulation, 
-                          pattern_results: List[StateAnalysisResult]) -> List[StateAnalysisResult]:
-        """Use LLM to validate and improve pattern matching results"""
-        
-        # Create validation prompt
-        validation_prompt = f"""Validate and improve compliance analysis for {state_regulation.state_name}:
 
-State: {state_regulation.state_name}
-Regulations: {', '.join(state_regulation.regulations)}
-Key Requirements: {', '.join(state_regulation.key_requirements)}
-
-Current Analysis Results:
-{json.dumps([{
-    'feature_name': r.feature_name,
-    'risk_score': r.risk_score,
-    'is_compliant': r.is_compliant,
-    'reasoning': r.reasoning
-} for r in pattern_results], indent=2)}
-
-Provide improvements to the analysis. Return JSON with updated results."""
-        
-        try:
-            response = self.llm.generate_content(validation_prompt)
-            
-            if response and response.text:
-                # Parse improvements and apply them
-                improvements = json.loads(response.text)
-                # Apply improvements to results
-                # (Implementation depends on the specific improvement format)
-                pass
-        
-        except Exception as e:
-            print(f"⚠️ LLM validation failed: {e}")
-        
-        return pattern_results
     
     def _extract_json_from_response(self, response_text: str) -> List[Dict[str, Any]]:
-        """Extract JSON from LLM response text"""
+        """Extract JSON from LLM response text with robust error handling"""
         import re
         
         if not response_text or not response_text.strip():
             print("⚠️ Empty response text provided to JSON extraction")
-            return []
+            raise Exception("Empty response text provided to JSON extraction")
         
         # Clean the response text
         cleaned_text = response_text.strip()
@@ -640,6 +388,9 @@ Provide improvements to the analysis. Return JSON with updated results."""
         print(f"🔍 Attempting JSON extraction from cleaned text ({len(cleaned_text)} characters)")
         print(f"📄 Cleaned text preview: {cleaned_text[:200]}...")
         
+        # Enhanced cleaning for common LLM response issues
+        cleaned_text = self._clean_json_text(cleaned_text)
+        
         # Try to parse the cleaned JSON directly
         try:
             result = json.loads(cleaned_text)
@@ -649,16 +400,23 @@ Provide improvements to the analysis. Return JSON with updated results."""
         except json.JSONDecodeError as e:
             print(f"⚠️ Direct JSON parsing failed: {e}")
         
-        # Try to find JSON object in the response
-        json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
-        matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
+        # Try to find JSON object in the response with more robust pattern
+        try:
+            json_pattern = r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}'
+            matches = re.findall(json_pattern, cleaned_text, re.DOTALL)
+        except Exception as regex_error:
+            print(f"⚠️ Regex pattern matching failed: {regex_error}")
+            print(f"📄 Problematic text preview: {cleaned_text[:200]}...")
+            matches = []
         
         print(f"🔍 Found {len(matches)} potential JSON matches")
         
         if matches:
             for i, match in enumerate(matches):
                 try:
-                    result = json.loads(match)
+                    # Clean the individual match
+                    cleaned_match = self._clean_json_text(match)
+                    result = json.loads(cleaned_match)
                     feature_results = result.get("feature_results", [])
                     if feature_results:
                         print(f"✅ JSON extraction successful from match {i+1}, found {len(feature_results)} feature results")
@@ -667,8 +425,171 @@ Provide improvements to the analysis. Return JSON with updated results."""
                     print(f"⚠️ JSON parsing failed for match {i+1}: {e}")
                     continue
         
-        print("❌ No valid JSON found in response")
-        return []
+        # Try to extract JSON using more aggressive cleaning
+        try:
+            aggressive_cleaned = self._aggressive_json_cleaning(cleaned_text)
+            result = json.loads(aggressive_cleaned)
+            feature_results = result.get("feature_results", [])
+            if feature_results:
+                print(f"✅ Aggressive JSON cleaning successful, found {len(feature_results)} feature results")
+                return feature_results
+        except json.JSONDecodeError as e:
+            print(f"⚠️ Aggressive JSON cleaning failed: {e}")
+        
+        print("❌ No valid JSON found in response after all cleaning attempts")
+        raise Exception("Failed to extract valid JSON from LLM response after multiple cleaning attempts")
+    
+    def _clean_json_text(self, text: str) -> str:
+        """Clean JSON text to handle common LLM response issues"""
+        import re
+        
+        # Remove invalid control characters (except newlines and tabs) - use a safer approach
+        import string
+        printable_chars = string.printable
+        text = ''.join(char for char in text if char in printable_chars)
+        
+        # Fix common quote issues - use string replacement instead of regex
+        try:
+            text = text.replace('"', '"').replace('"', '"')  # Replace smart quotes with regular quotes
+            text = text.replace(''', "'").replace(''', "'")  # Replace smart apostrophes with regular apostrophes
+        except Exception as e:
+            print(f"⚠️ Quote replacement failed in _clean_json_text: {e}")
+            # Continue with original text
+        
+        # Fix common escape sequence issues
+        try:
+            text = re.sub(r'\\(?!["\\/bfnrt])', r'\\\\', text)  # Fix invalid escape sequences
+        except Exception as e:
+            print(f"⚠️ Escape sequence fixing failed in _clean_json_text: {e}")
+        
+        # Remove trailing commas in objects and arrays
+        try:
+            text = re.sub(r',(\s*[}\]])', r'\1', text)
+        except Exception as e:
+            print(f"⚠️ Trailing comma removal failed in _clean_json_text: {e}")
+        
+        # Fix common formatting issues
+        try:
+            text = re.sub(r'\s+', ' ', text)  # Normalize whitespace
+            text = text.strip()
+        except Exception as e:
+            print(f"⚠️ Whitespace normalization failed in _clean_json_text: {e}")
+        
+        return text
+    
+    def _aggressive_json_cleaning(self, text: str) -> str:
+        """More aggressive JSON cleaning for problematic responses"""
+        import re
+        
+        # Try to extract just the JSON object
+        # Look for the start of a JSON object
+        start_match = re.search(r'\{', text)
+        if not start_match:
+            raise Exception("No JSON object start found")
+        
+        start_pos = start_match.start()
+        
+        # Find the matching closing brace
+        brace_count = 0
+        end_pos = -1
+        
+        for i, char in enumerate(text[start_pos:], start_pos):
+            if char == '{':
+                brace_count += 1
+            elif char == '}':
+                brace_count -= 1
+                if brace_count == 0:
+                    end_pos = i + 1
+                    break
+        
+        if end_pos == -1:
+            raise Exception("No matching closing brace found")
+        
+        # Extract the JSON object
+        json_text = text[start_pos:end_pos]
+        
+        # Apply aggressive cleaning
+        json_text = self._clean_json_text(json_text)
+        
+        # Remove any remaining problematic characters - use a safer approach
+        # Remove all non-printable characters except newlines and tabs
+        import string
+        printable_chars = string.printable
+        json_text = ''.join(char for char in json_text if char in printable_chars or char in '\n\t')
+        
+        return json_text
+    
+    def _sanitize_llm_response(self, response_text: str) -> str:
+        """Sanitize LLM response to prevent JSON parsing issues"""
+        import re
+        
+        if not response_text or not response_text.strip():
+            raise Exception("Empty LLM response")
+        
+        print(f"🔍 Sanitizing response of length: {len(response_text)}")
+        
+        # Remove any markdown formatting
+        text = response_text.strip()
+        try:
+            text = re.sub(r'^```json\s*\n?', '', text)
+            text = re.sub(r'^```\s*\n?', '', text)
+            text = re.sub(r'\n?```\s*$', '', text)
+            text = text.strip()
+            print(f"✅ Markdown removal completed")
+        except Exception as e:
+            print(f"⚠️ Markdown removal failed: {e}")
+            # Continue with original text
+        
+        # Remove invalid control characters - use a safer approach
+        try:
+            import string
+            printable_chars = string.printable
+            text = ''.join(char for char in text if char in printable_chars)
+            print(f"✅ Control character removal completed")
+        except Exception as e:
+            print(f"⚠️ Control character removal failed: {e}")
+            # Continue with original text
+        
+        # Fix common quote issues - use string replacement instead of regex
+        try:
+            text = text.replace('"', '"').replace('"', '"')  # Replace smart quotes with regular quotes
+            text = text.replace(''', "'").replace(''', "'")  # Replace smart apostrophes with regular apostrophes
+            print(f"✅ Quote replacement completed")
+        except Exception as e:
+            print(f"⚠️ Quote replacement failed: {e}")
+            # Continue with original text
+        
+        # Fix boolean values
+        try:
+            text = re.sub(r'\bTrue\b', 'true', text)
+            text = re.sub(r'\bFalse\b', 'false', text)
+            print(f"✅ Boolean value conversion completed")
+        except Exception as e:
+            print(f"⚠️ Boolean value conversion failed: {e}")
+        
+        # Fix common escape sequence issues
+        try:
+            text = re.sub(r'\\(?!["\\/bfnrt])', r'\\\\', text)
+            print(f"✅ Escape sequence fixing completed")
+        except Exception as e:
+            print(f"⚠️ Escape sequence fixing failed: {e}")
+        
+        # Remove trailing commas in objects and arrays
+        try:
+            text = re.sub(r',(\s*[}\]])', r'\1', text)
+            print(f"✅ Trailing comma removal completed")
+        except Exception as e:
+            print(f"⚠️ Trailing comma removal failed: {e}")
+        
+        # Normalize whitespace
+        try:
+            text = re.sub(r'\s+', ' ', text)
+            text = text.strip()
+            print(f"✅ Whitespace normalization completed")
+        except Exception as e:
+            print(f"⚠️ Whitespace normalization failed: {e}")
+        
+        return text
     
     def _calculate_overall_stats(self, state_results: Dict[str, List[StateAnalysisResult]], 
                                 feature_results: Dict[str, List[StateAnalysisResult]]) -> Dict[str, Any]:

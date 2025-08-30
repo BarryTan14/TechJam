@@ -169,30 +169,19 @@ class PRDParserAgent:
         start_time = datetime.now()
         
         # Base prompt with optimized feature classification
-        base_prompt = f"""You are an AI assistant that identifies and classifies "features" in software projects.
+        base_prompt = f"""You are an AI assistant that identifies and classifies "features" in give input.
 
 FEATURE CLASSIFICATION CRITERIA:
 A **feature** is defined as a functional component or capability that:
 
-1. **Legal/Regulatory Compliance**: Implements or enforces specific legal or regulatory requirements
-   - Examples: Location-based restrictions, age gates, data retention policies, consent management
-   - Must have clear legal basis (GDPR, CCPA, BIPA, HIPAA, etc.)
-
-2. **User-Facing Functionality**: Provides user-facing functionality designed to fulfill a business or compliance need
+1. **User-Facing Functionality**: Provides user-facing functionality designed to fulfill a business or compliance need
    - Examples: Privacy controls, data export tools, consent forms, access controls
    - Must have deliberate user interaction or impact
 
-3. **Clear Purpose and Intent**: Is deliberately rolled out or designed with a clear purpose and intention
+2. **Clear Purpose and Intent**: Is deliberately rolled out or designed with a clear purpose and intention
    - Examples: Purpose-built compliance tools, regulatory enforcement mechanisms
    - Must have documented business or legal justification
 
-CLASSIFICATION EXAMPLES:
-✅ "Feature reads user location to enforce France's copyright rules (download blocking)" — Legal enforcement, qualifies as a feature
-✅ "Requires age gates specific to Indonesia's Child Protection Law" — Regulatory compliance, qualifies as a feature
-✅ "Data retention policy that automatically deletes user data after 30 days per GDPR requirements" — Legal compliance, qualifies as a feature
-❌ "Geofences feature rollout in US for market testing" — Business/marketing driven, not a legal feature requirement
-❌ "General user authentication system" — Basic functionality, not compliance-specific
-❓ "A video filter feature is available globally except KR" — Ambiguous intent, requires human evaluation
 
 EXTRACTION INSTRUCTIONS:
 Analyze this PRD and extract ONLY features that meet the defined criteria:
@@ -253,11 +242,9 @@ IMPORTANT GUIDELINES:
                     thought_process = "Used LLM with RAG augmentation, feature classification, and JSON extraction"
             except Exception as e:
                 print(f"⚠️ LLM parsing with RAG and feature classification failed: {e}")
-                analysis_result = self._fallback_parsing_with_rag(prd_content)
-                thought_process = "Used fallback parsing with RAG and feature classification due to LLM failure"
+                raise Exception(f"PRD parsing failed: {e}")
         else:
-            analysis_result = self._fallback_parsing_with_rag(prd_content)
-            thought_process = "Used fallback parsing with RAG and feature classification (no LLM available)"
+            raise Exception("No LLM available for PRD parsing")
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -280,38 +267,7 @@ IMPORTANT GUIDELINES:
         
         return agent_output
     
-    def _fallback_parsing_with_rag(self, content: str) -> Dict[str, Any]:
-        """Fallback parsing when LLM fails, with RAG context and feature classification"""
-        # Get relevant terms for context
-        relevant_terms = self._retrieve_relevant_terms("feature", max_results=3)
-        
-        rag_context = ""
-        if relevant_terms:
-            rag_context = "\n\nRelevant terminology found: " + ", ".join([f"{t['term']}: {t['description']}" for t in relevant_terms])
-        
-        return {
-            "extracted_features": [
-                {
-                    "feature_id": "feature_1",
-                    "feature_name": "PRD Feature",
-                    "feature_description": f"Feature extracted from PRD content{rag_context}",
-                    "feature_content": content[:500] + "..." if len(content) > 500 else content,
-                    "section": "General",
-                    "priority": "Medium",
-                    "complexity": "Medium",
-                    "data_types": ["unknown"],
-                    "user_impact": "Unknown",
-                    "technical_requirements": ["analysis_required"],
-                    "compliance_considerations": ["GDPR", "CCPA"],
-                    "legal_basis": "Requires human review - fallback parsing",
-                    "classification_confidence": "low",
-                    "requires_human_review": True
-                }
-            ],
-            "total_features": 1,
-            "analysis_summary": f"Created basic feature from PRD content due to parsing issues{rag_context}",
-            "classification_notes": "Fallback parsing used - all features require human review for proper classification"
-        }
+
     
     def _extract_json_from_response(self, response_text: str) -> Dict[str, Any]:
         """Extract JSON from LLM response text"""
@@ -346,8 +302,8 @@ IMPORTANT GUIDELINES:
                 except json.JSONDecodeError:
                     continue
         
-        # If no JSON found, create a basic feature with RAG and classification
-        return self._fallback_parsing_with_rag(cleaned_text)
+        # If no JSON found, raise an exception
+        raise Exception("Failed to extract valid JSON from LLM response")
     
     def search_terminology(self, query: str, max_results: int = 3) -> List[Dict[str, Any]]:
         """

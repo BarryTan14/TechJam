@@ -20,16 +20,16 @@ GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Import agents
 from agents import (
+    PRDParserAgent,
     FeatureAnalyzerAgent,
     RegulationMatcherAgent,
     RiskAssessorAgent,
     ReasoningGeneratorAgent,
     QualityAssuranceAgent,
-    PRDParserAgent,
     USStateComplianceAgent,
+    ExecutiveReportGenerator,
     NonCompliantStatesAnalyzerAgent,
     OptimizedStateAnalyzer,
-    ExecutiveReportGenerator,
     state_regulations_cache,
     AgentOutput,
     ExtractedFeature,
@@ -39,6 +39,8 @@ from agents import (
     StateComplianceScore,
     BatchAnalysisResult
 )
+from agents.executive_report_manager import ExecutiveReportManager
+from agents.cultural_sensitivity_analyzer import CulturalSensitivityAnalyzer
 
 @dataclass
 class WorkflowState:
@@ -68,6 +70,9 @@ class WorkflowState:
     
     # Executive report
     executive_report: Optional[Dict[str, Any]] = None
+    
+    # Cultural sensitivity analysis
+    cultural_sensitivity_analysis: Optional[Dict[str, Any]] = None
     
     # Workflow metadata
     workflow_id: str = ""
@@ -112,11 +117,17 @@ class ComplianceWorkflow:
         
         # Initialize executive report generator
         self.executive_report_generator = ExecutiveReportGenerator(self.llm)
+        
+        # Initialize executive report manager for MongoDB
+        self.executive_report_manager = ExecutiveReportManager()
+        
+        # Initialize cultural sensitivity analyzer
+        self.cultural_sensitivity_analyzer = CulturalSensitivityAnalyzer(self.llm)
     
     def setup_llm(self):
         """Setup LLM with fallback models"""
         if not GEMINI_API_KEY:
-            print("⚠️  No GEMINI_API_KEY found. System will run in fallback mode.")
+            print("⚠️  No GEMINI_API_KEY found. System will not be able to run.")
             return
         
         try:
@@ -148,7 +159,7 @@ class ComplianceWorkflow:
                     print(f"⚠️  Model {model_name} failed: {model_error}")
                     continue
             
-            print("❌ All Gemini models failed. System will run in fallback mode.")
+            print("❌ All Gemini models failed. System will not be able to run.")
             self.llm = None
             
         except Exception as e:
@@ -250,6 +261,18 @@ class ComplianceWorkflow:
             )
             agent_outputs["us_state_compliance"] = us_state_compliance_output
             
+            # Cultural Sensitivity Analysis
+            print(f"🌍 Analyzing cultural sensitivity for feature: {feature.feature_name}")
+            cultural_sensitivity_scores = self.cultural_sensitivity_analyzer.analyze_feature_for_all_regions(
+                feature.feature_name,
+                feature.feature_description,
+                feature.feature_content
+            )
+            agent_outputs["cultural_sensitivity_analyzer"] = {
+                "scores": cultural_sensitivity_scores,
+                "timestamp": datetime.now().isoformat()
+            }
+            
             # Extract final results
             compliance_flags = regulation_matcher_output.analysis_result.get("applicable_regulations", [])
             risk_level = risk_assessor_output.analysis_result.get("overall_risk_level", "unknown")
@@ -290,7 +313,7 @@ class ComplianceWorkflow:
                 else:
                     risk_level = "high"
                 
-                # Get reasoning from state data, or generate fallback reasoning
+                # Get reasoning from state data
                 reasoning = state_data.get("reasoning", "")
                 if not reasoning:
                     if state_data.get("is_compliant", True):
@@ -313,46 +336,7 @@ class ComplianceWorkflow:
             
         except Exception as e:
             print(f"⚠️  Error in feature analysis: {e}")
-            # Create fallback results
-            compliance_flags = ["GDPR", "CCPA"]
-            risk_level = "high"
-            confidence_score = 0.7
-            requires_human_review = True
-            reasoning = f"Analysis incomplete due to error: {str(e)}"
-            recommendations = ["Review feature manually", "Check system configuration"]
-            non_compliant_states = ["California", "Virginia"]
-            
-            # Create fallback US state compliance data
-            us_state_compliance_list = []
-            state_compliance_scores_dict = {}
-            fallback_states = [
-                {"state_code": "CA", "state_name": "California", "is_compliant": False},
-                {"state_code": "VA", "state_name": "Virginia", "is_compliant": False}
-            ]
-            for state_data in fallback_states:
-                state_compliance = USStateCompliance(
-                    state_name=state_data["state_name"],
-                    state_code=state_data["state_code"],
-                    is_compliant=state_data["is_compliant"],
-                    non_compliant_regulations=["CCPA", "VCDPA"],
-                    risk_level="High",
-                    required_actions=["Implement consent mechanisms", "Add data deletion rights"],
-                    notes="Fallback compliance data due to analysis error"
-                )
-                us_state_compliance_list.append(state_compliance)
-                
-                # Create fallback StateComplianceScore
-                state_compliance_score = StateComplianceScore(
-                    state_code=state_data["state_code"],
-                    state_name=state_data["state_name"],
-                    compliance_score=0.3,  # High risk = low compliance score (0.0 to 1.0 scale)
-                    risk_level="High",
-                    reasoning=f"Feature is non-compliant with {state_data['state_name']}'s regulations (CCPA, VCDPA) due to data processing practices. Fallback analysis due to system error.",
-                    non_compliant_regulations=["CCPA", "VCDPA"],
-                    required_actions=["Implement consent mechanisms", "Add data deletion rights"],
-                    notes="Fallback compliance data due to analysis error"
-                )
-                state_compliance_scores_dict[state_data["state_code"]] = state_compliance_score
+            raise Exception(f"Feature analysis failed: {e}")
         
         processing_time = (datetime.now() - start_time).total_seconds()
         
@@ -368,6 +352,7 @@ class ComplianceWorkflow:
             us_state_compliance=us_state_compliance_list,
             non_compliant_states=non_compliant_states,
             state_compliance_scores=state_compliance_scores_dict,
+            cultural_sensitivity_scores=cultural_sensitivity_scores,
             processing_time=processing_time,
             timestamp=datetime.now().isoformat()
         )
@@ -392,6 +377,12 @@ class ComplianceWorkflow:
         
         print(f"✅ Extracted {len(state.extracted_features)} features from PRD")
         
+        # Check if any features were detected
+        if not state.extracted_features or len(state.extracted_features) == 0:
+            error_msg = f"No features detected in PRD content. The uploaded content does not contain any identifiable software features that require compliance analysis."
+            print(f"❌ {error_msg}")
+            raise ValueError(error_msg)
+        
         # Step 2: Analyze each state against all features
         print(f"\n🇺🇸 Step 2: Analyzing each state against {len(state.extracted_features)} features...")
         state_analysis_results = self.analyze_states_against_features(state.extracted_features)
@@ -406,8 +397,14 @@ class ComplianceWorkflow:
         print(f"\n📈 Step 4: Generating overall results...")
         self._generate_overall_results(state, state_analysis_results)
         
-        # Step 5: Generate executive report
-        print(f"\n📊 Step 5: Generating executive report...")
+        # Step 5: Generate cultural sensitivity analysis
+        print(f"\n🌍 Step 5: Generating cultural sensitivity analysis...")
+        cultural_analysis = self._generate_cultural_sensitivity_analysis(state)
+        state.cultural_sensitivity_analysis = cultural_analysis
+        print(f"✅ Cultural sensitivity analysis generated")
+        
+        # Step 6: Generate executive report
+        print(f"\n📊 Step 6: Generating executive report...")
         executive_report = self.executive_report_generator.generate_executive_report(state)
         state.executive_report = {
             "report_id": executive_report.report_id,
@@ -422,6 +419,19 @@ class ComplianceWorkflow:
         }
         
         print(f"✅ Executive report generated: {executive_report.report_id}")
+        
+        # Store executive report in MongoDB
+        print(f"💾 Storing executive report in MongoDB...")
+        storage_success = self.executive_report_manager.store_executive_report(
+            state.executive_report,
+            state.prd_id,
+            state.workflow_id
+        )
+        
+        if storage_success:
+            print(f"✅ Executive report stored in MongoDB successfully")
+        else:
+            print(f"⚠️ Failed to store executive report in MongoDB")
         
         # Save results
         self.save_workflow_results(state, state_analysis_results)
@@ -476,7 +486,7 @@ class ComplianceWorkflow:
                     non_compliant_count = state_data.get("non_compliant_features", 0)
                     critical_issues.append(f"{state_data.get('state_name', state_code)}: {non_compliant_count} non-compliant features")
         else:
-            # Fallback to feature-based calculation
+            # Collect critical issues from feature compliance results
             for result in state.feature_compliance_results:
                 if result.risk_level in ["high", "critical"]:
                     critical_issues.append(f"{result.feature.feature_name}: {result.risk_level} risk")
@@ -490,7 +500,7 @@ class ComplianceWorkflow:
                 for feature_data in state_data.get("features", []):
                     all_recommendations.extend(feature_data.get("required_actions", []))
         else:
-            # Fallback to feature-based calculation
+            # Collect recommendations from feature compliance results
             for result in state.feature_compliance_results:
                 all_recommendations.extend(result.recommendations)
         
@@ -512,14 +522,115 @@ class ComplianceWorkflow:
                         "features": state_data.get("features", [])
                     }
         else:
-            # Fallback to feature-based calculation
+            # Use non-compliant states analyzer
             non_compliant_states_analysis = self.non_compliant_states_analyzer.analyze_non_compliant_states(state.feature_compliance_results)
             state.non_compliant_states_dict = non_compliant_states_analysis.analysis_result.get("non_compliant_states_dict", {})
         
         state.end_time = datetime.now().isoformat()
         state.total_processing_time = (datetime.now() - datetime.fromisoformat(state.start_time)).total_seconds()
     
-
+    def _generate_cultural_sensitivity_analysis(self, state: WorkflowState) -> Dict[str, Any]:
+        """Generate overall cultural sensitivity analysis from feature results"""
+        
+        if not state.feature_compliance_results:
+            return {
+                "overall_cultural_sensitivity": "No features analyzed",
+                "regional_scores": {},
+                "key_cultural_issues": [],
+                "recommendations": [],
+                "requires_human_review": True
+            }
+        
+        # Aggregate cultural sensitivity scores across all features and regions
+        regional_scores = {}
+        all_cultural_issues = []
+        all_recommendations = []
+        
+        # Initialize regional scores
+        regions = ["global", "north_america", "europe", "asia_pacific", "middle_east", "africa", "latin_america"]
+        for region in regions:
+            regional_scores[region] = {
+                "average_score": 0.0,
+                "score_level": "medium",
+                "total_features": 0,
+                "high_sensitivity_features": 0,
+                "medium_sensitivity_features": 0,
+                "low_sensitivity_features": 0,
+                "cultural_issues": [],
+                "recommendations": []
+            }
+        
+        # Aggregate scores from all features
+        for result in state.feature_compliance_results:
+            if hasattr(result, 'cultural_sensitivity_scores') and result.cultural_sensitivity_scores:
+                for region, score in result.cultural_sensitivity_scores.items():
+                    if region in regional_scores:
+                        regional_scores[region]["total_features"] += 1
+                        regional_scores[region]["average_score"] += score.overall_score
+                        
+                        # Count by sensitivity level
+                        if score.score_level == "high":
+                            regional_scores[region]["high_sensitivity_features"] += 1
+                        elif score.score_level == "medium":
+                            regional_scores[region]["medium_sensitivity_features"] += 1
+                        else:
+                            regional_scores[region]["low_sensitivity_features"] += 1
+                        
+                        # Collect issues and recommendations
+                        regional_scores[region]["cultural_issues"].extend(score.potential_issues)
+                        regional_scores[region]["recommendations"].extend(score.recommendations)
+                        
+                        all_cultural_issues.extend(score.potential_issues)
+                        all_recommendations.extend(score.recommendations)
+        
+        # Calculate averages and determine overall levels
+        overall_cultural_sensitivity = "medium"
+        total_global_score = 0.0
+        total_features = 0
+        
+        for region, data in regional_scores.items():
+            if data["total_features"] > 0:
+                data["average_score"] /= data["total_features"]
+                
+                # Determine regional level
+                if data["average_score"] >= 0.7:
+                    data["score_level"] = "high"
+                elif data["average_score"] >= 0.4:
+                    data["score_level"] = "medium"
+                else:
+                    data["score_level"] = "low"
+                
+                total_global_score += data["average_score"]
+                total_features += 1
+        
+        # Calculate overall cultural sensitivity
+        if total_features > 0:
+            overall_average = total_global_score / total_features
+            if overall_average >= 0.7:
+                overall_cultural_sensitivity = "high"
+            elif overall_average >= 0.4:
+                overall_cultural_sensitivity = "medium"
+            else:
+                overall_cultural_sensitivity = "low"
+        
+        # Remove duplicates from issues and recommendations
+        unique_issues = list(set(all_cultural_issues))
+        unique_recommendations = list(set(all_recommendations))
+        
+        return {
+            "overall_cultural_sensitivity": overall_cultural_sensitivity,
+            "overall_average_score": total_global_score / total_features if total_features > 0 else 0.0,
+            "regional_scores": regional_scores,
+            "key_cultural_issues": unique_issues[:10],  # Top 10 issues
+            "recommendations": unique_recommendations[:10],  # Top 10 recommendations
+            "total_features_analyzed": len(state.feature_compliance_results),
+            "regions_analyzed": len([r for r in regional_scores.values() if r["total_features"] > 0]),
+            "requires_human_review": any(
+                any(score.requires_human_review for score in result.cultural_sensitivity_scores.values())
+                for result in state.feature_compliance_results
+                if hasattr(result, 'cultural_sensitivity_scores') and result.cultural_sensitivity_scores
+            )
+        }
     
     def save_workflow_results(self, state: WorkflowState, state_analysis_results: Dict[str, Dict[str, Any]]):
         """Save workflow results to output.json"""
@@ -571,6 +682,7 @@ class ComplianceWorkflow:
                     "summary_recommendations": state.summary_recommendations,
                     "non_compliant_states_dict": state.non_compliant_states_dict
                 },
+                "cultural_sensitivity_analysis": state.cultural_sensitivity_analysis,
                 "executive_report": state.executive_report
             }
             
@@ -836,7 +948,7 @@ def main():
     
     # Check dependencies
     if not GEMINI_API_KEY:
-        print("⚠️  No GEMINI_API_KEY found. System will run in fallback mode.")
+        print("⚠️  No GEMINI_API_KEY found. System will not be able to run.")
         print("💡 Set your API key: GEMINI_API_KEY=your_key_here")
     
     # Create workflow

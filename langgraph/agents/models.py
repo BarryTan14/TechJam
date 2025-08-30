@@ -61,6 +61,20 @@ class StateComplianceScore:
 
 
 @dataclass
+class CulturalSensitivityScore:
+    """Represents cultural sensitivity score for a region"""
+    region: str
+    overall_score: float  # 0.0 to 1.0
+    score_level: str  # "low", "medium", "high"
+    reasoning: str
+    cultural_factors: List[str]
+    potential_issues: List[str]
+    recommendations: List[str]
+    confidence_score: float
+    requires_human_review: bool
+
+
+@dataclass
 class FeatureComplianceResult:
     """Complete compliance result for a single feature"""
     feature: ExtractedFeature
@@ -75,6 +89,8 @@ class FeatureComplianceResult:
     non_compliant_states: List[str]
     # New field: Dictionary mapping state codes to compliance scores and reasoning
     state_compliance_scores: Dict[str, StateComplianceScore]
+    # New field: Cultural sensitivity analysis for regions
+    cultural_sensitivity_scores: Dict[str, CulturalSensitivityScore]
     processing_time: float
     timestamp: str
 

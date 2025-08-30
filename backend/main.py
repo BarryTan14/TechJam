@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, HTTPException, status, APIRouter, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -47,6 +46,7 @@ if uri:
         logs_collection = db["logs"]
         users_collection = db["users"]
         terminology_collection = db["terminology"]
+        executive_reports_collection = db["executive_reports"]
         
         # Create indexes for better performance
         prd_collection.create_index("ID", unique=True)
@@ -73,6 +73,7 @@ if uri:
         logs_collection = None
         users_collection = None
         terminology_collection = None
+        executive_reports_collection = None
 else:
     print("⚠️  Running in offline mode - API will work but data won't be persisted")
     MONGODB_CONNECTED = False
@@ -237,6 +238,7 @@ else:
     logs_collection = MockCollection("logs")
     users_collection = MockCollection("users")
     terminology_collection = MockCollection("terminology")
+    executive_reports_collection = MockCollection("executive_reports")
 
 # Data migration function
 def migrate_existing_data():
@@ -482,6 +484,50 @@ def verify_password(password: str, hashed_password: str) -> bool:
     """Verify a password against its bcrypt hash"""
     return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
+def store_executive_report_in_mongodb(executive_report: Dict[str, Any], prd_id: str, workflow_id: str) -> bool:
+    """
+    Store executive report in dedicated MongoDB collection
+    
+    Args:
+        executive_report: Executive report data
+        prd_id: PRD identifier
+        workflow_id: Workflow identifier
+        
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        # Prepare document for storage
+        document = {
+            "report_id": executive_report.get("report_id"),
+            "prd_id": prd_id,
+            "workflow_id": workflow_id,
+            "prd_name": executive_report.get("prd_name"),
+            "generated_at": executive_report.get("generated_at"),
+            "executive_summary": executive_report.get("executive_summary"),
+            "key_findings": executive_report.get("key_findings", []),
+            "risk_assessment": executive_report.get("risk_assessment", {}),
+            "compliance_overview": executive_report.get("compliance_overview", {}),
+            "recommendations": executive_report.get("recommendations", []),
+            "next_steps": executive_report.get("next_steps", []),
+            "stored_at": datetime.now().isoformat(),
+            "status": "active"
+        }
+        
+        # Insert document
+        result = executive_reports_collection.insert_one(document)
+        
+        if result.inserted_id:
+            logger.info(f"✅ Executive report stored in MongoDB: {result.inserted_id}")
+            return True
+        else:
+            logger.error("❌ Failed to store executive report in MongoDB")
+            return False
+            
+    except Exception as e:
+        logger.error(f"❌ Error storing executive report in MongoDB: {e}")
+        return False
+
 # Run data migration for existing data
 migrate_existing_data()
 
@@ -567,6 +613,11 @@ async def create_prd(prd: PRDCreate):
                         {"$set": update_data}
                     )
                     
+                    # Store executive report in dedicated collection if present
+                    if executive_report:
+                        workflow_id = langgraph_result.get("workflow_id", f"workflow_{prd_id}")
+                        store_executive_report_in_mongodb(executive_report, prd_id, workflow_id)
+                    
                     # Log the successful analysis
                     analysis_log_data = {
                         "uuid": generate_uuid(),
@@ -581,6 +632,27 @@ async def create_prd(prd: PRDCreate):
                     logger.info(f"✅ LangGraph analysis completed for PRD: {prd.Name}")
                     logger.info(f"📊 Raw response dumped to MongoDB")
                     
+                elif response.status_code == 400:
+                    # Handle 400 error (no features detected)
+                    error_detail = response.json().get("detail", "No features detected in PRD content")
+                    logger.warning(f"⚠️ No features detected in PRD: {prd.Name}")
+                    
+                    # Log the error
+                    error_log_data = {
+                        "uuid": generate_uuid(),
+                        "prd_uuid": prd_id,
+                        "action": "LANGGRAPH_ANALYSIS_NO_FEATURES",
+                        "details": f"No features detected in PRD '{prd.Name}': {error_detail}",
+                        "level": "WARNING",
+                        "timestamp": current_time
+                    }
+                    # logs_collection.insert_one(error_log_data)
+                    
+                    # Return 400 error to client
+                    raise HTTPException(
+                        status_code=400,
+                        detail=error_detail
+                    )
                 else:
                     # Log LangGraph API error
                     error_log_data = {
@@ -766,6 +838,11 @@ async def create_prd_from_file(
                         {"$set": update_data}
                     )
                     
+                    # Store executive report in dedicated collection if present
+                    if executive_report:
+                        workflow_id = langgraph_result.get("workflow_id", f"workflow_{prd_id}")
+                        store_executive_report_in_mongodb(executive_report, prd_id, workflow_id)
+                    
                     # Log the successful analysis
                     analysis_log_data = {
                         "uuid": generate_uuid(),
@@ -780,6 +857,27 @@ async def create_prd_from_file(
                     logger.info(f"✅ LangGraph analysis completed for PRD from file: {Name}")
                     logger.info(f"📊 Raw response dumped to MongoDB")
                     
+                elif response.status_code == 400:
+                    # Handle 400 error (no features detected)
+                    error_detail = response.json().get("detail", "No features detected in PRD content")
+                    logger.warning(f"⚠️ No features detected in PRD from file: {Name}")
+                    
+                    # Log the error
+                    error_log_data = {
+                        "uuid": generate_uuid(),
+                        "prd_uuid": prd_id,
+                        "action": "LANGGRAPH_ANALYSIS_NO_FEATURES",
+                        "details": f"No features detected in PRD '{Name}' from file '{file.filename}': {error_detail}",
+                        "level": "WARNING",
+                        "timestamp": current_time
+                    }
+                    # logs_collection.insert_one(error_log_data)
+                    
+                    # Return 400 error to client
+                    raise HTTPException(
+                        status_code=400,
+                        detail=error_detail
+                    )
                 else:
                     # Log LangGraph API error
                     error_log_data = {
@@ -790,7 +888,7 @@ async def create_prd_from_file(
                         "level": "ERROR",
                         "timestamp": current_time
                     }
-                    logs_collection.insert_one(error_log_data)
+                    # logs_collection.insert_one(error_log_data)
                     
                     logger.error(f"❌ LangGraph API error: {response.status_code} - {response.text}")
                     
@@ -1570,7 +1668,15 @@ async def analyze_prd_with_langgraph(request: LangGraphRequest):
                 headers={"Content-Type": "application/json"}
             )
             
-            if response.status_code != 200:
+            if response.status_code == 400:
+                # Handle 400 error (no features detected)
+                error_detail = response.json().get("detail", "No features detected in PRD content")
+                logger.warning(f"⚠️ No features detected in PRD: {request.name}")
+                raise HTTPException(
+                    status_code=400,
+                    detail=error_detail
+                )
+            elif response.status_code != 200:
                 logger.error(f"LangGraph API error: {response.status_code} - {response.text}")
                 raise HTTPException(
                     status_code=response.status_code,
@@ -1857,7 +1963,8 @@ async def health_check():
                     "feature_data": feature_data_collection.count_documents({}),
                     "logs": logs_collection.count_documents({}),
                     "users": users_collection.count_documents({}),
-                    "terminology": terminology_collection.count_documents({})
+                    "terminology": terminology_collection.count_documents({}),
+                    "executive_reports": executive_reports_collection.count_documents({})
                 },
                 "features_per_prd": {
                     "total_features": feature_data_collection.count_documents({}),
@@ -1876,7 +1983,8 @@ async def health_check():
                     "feature_data": feature_data_collection.count_documents({}),
                     "logs": logs_collection.count_documents({}),
                     "users": users_collection.count_documents({}),
-                    "terminology": terminology_collection.count_documents({})
+                    "terminology": terminology_collection.count_documents({}),
+                    "executive_reports": executive_reports_collection.count_documents({})
                 },
                 "features_per_prd": {
                     "total_features": feature_data_collection.count_documents({}),
@@ -1898,7 +2006,7 @@ async def root():
         "port": 5000,
         "database": "connected" if MONGODB_CONNECTED else "offline",
         "mode": "production" if MONGODB_CONNECTED else "mock_data",
-        "collections": ["PRD", "feature_data", "logs", "users", "terminology"],
+        "collections": ["PRD", "feature_data", "logs", "users", "terminology", "executive_reports"],
         "docs": "/docs",
         "note": "Data persistence available" if MONGODB_CONNECTED else "Running in offline mode - data not persisted"
     }

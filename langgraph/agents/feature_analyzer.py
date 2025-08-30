@@ -54,11 +54,9 @@ Focus on data types, processing purposes, and compliance concerns."""
                     thought_process = "Used LLM with JSON extraction"
                 
             except Exception as e:
-                analysis_result = self._fallback_analysis(feature_content)
-                thought_process = f"Used fallback analysis due to LLM failure: {e}"
+                raise Exception(f"Feature analysis failed: {e}")
         else:
-            analysis_result = self._fallback_analysis(feature_content)
-            thought_process = "Used fallback analysis (no LLM available)"
+            raise Exception("No LLM available for feature analysis")
         
         # Calculate processing time
         processing_time = (datetime.now() - start_time).total_seconds()
@@ -150,33 +148,7 @@ Focus on data types, processing purposes, and compliance concerns."""
         except:
             pass
         
-        # If no JSON found, return default structure
-        return {
-            "data_types_collected": ["personal_data"],
-            "processing_purposes": ["analytics"],
-            "data_flows": ["user_input", "cloud_storage"],
-            "user_interactions": ["consent_required", "opt_out_available"],
-            "technical_implementation": ["encryption", "anonymization"],
-            "compliance_concerns": ["data_minimization", "consent_management"]
-        }
+        # If no JSON found, raise an exception
+        raise Exception("Failed to extract valid JSON from LLM response")
     
-    def _fallback_analysis(self, feature_content: str) -> Dict[str, Any]:
-        """Fallback feature analysis using pattern matching"""
-        content_lower = feature_content.lower()
-        
-        data_types = []
-        if any(term in content_lower for term in ["personal", "user", "customer"]):
-            data_types.append("personal_data")
-        if any(term in content_lower for term in ["location", "gps", "geolocation"]):
-            data_types.append("location_data")
-        if any(term in content_lower for term in ["facial", "fingerprint", "biometric"]):
-            data_types.append("biometric_data")
-        
-        return {
-            "data_types_collected": data_types or ["personal_data"],
-            "processing_purposes": ["analytics", "personalization"],
-            "data_flows": ["user_input", "cloud_storage"],
-            "user_interactions": ["consent_required"],
-            "technical_implementation": ["encryption"],
-            "compliance_concerns": ["data_minimization", "consent_management"]
-        }
+
