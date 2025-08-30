@@ -1,5 +1,5 @@
 
-from fastapi import FastAPI, HTTPException, status, APIRouter
+from fastapi import FastAPI, HTTPException, status, APIRouter, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Optional, Dict, Any
@@ -320,6 +320,10 @@ class PRDBase(BaseModel):
 class PRDCreate(PRDBase):
     pass
 
+class PRDFileCreate(BaseModel):
+    Name: str = Field(..., description="PRD Name")
+    Status: str = Field(default="Draft", description="PRD Status")
+
 class PRDUpdate(BaseModel):
     Name: Optional[str] = None
     Description: Optional[str] = None
@@ -331,6 +335,10 @@ class PRDResponse(PRDBase):
     updated_at: Optional[datetime] = None
     # LangGraph analysis fields
     langgraph_analysis: Optional[Dict[str, Any]] = None
+    # Executive report field
+    executive_report: Optional[Dict[str, Any]] = None
+    # Overall results field
+    overall_results: Optional[Dict[str, Any]] = None
 
 class FeatureDataBase(BaseModel):
     prd_uuid: str = Field(..., description="UUID from PRD table")
@@ -379,6 +387,7 @@ class LangGraphResponse(BaseModel):
     non_compliant_states: Dict[str, Any]
     processing_time: float
     status: str = "completed"
+    executive_report: Optional[Dict[str, Any]] = None
 
 # User Management Models
 class UserBase(BaseModel):
@@ -536,10 +545,26 @@ async def create_prd(prd: PRDCreate):
                     # Parse LangGraph response
                     langgraph_result = response.json()
                     
-                    # Simply dump the entire LangGraph response into MongoDB
+                    # Extract executive report if present
+                    executive_report = None
+                    if "executive_report" in langgraph_result:
+                        executive_report = langgraph_result["executive_report"]
+                    
+                    # Extract overall results if present
+                    overall_results = None
+                    if "overall_results" in langgraph_result:
+                        overall_results = langgraph_result["overall_results"]
+                    
+                    # Store LangGraph analysis, executive report, and overall results
+                    update_data = {"langgraph_analysis": langgraph_result}
+                    if executive_report:
+                        update_data["executive_report"] = executive_report
+                    if overall_results:
+                        update_data["overall_results"] = overall_results
+                    
                     prd_collection.update_one(
                         {"ID": prd_id},
-                        {"$set": {"langgraph_analysis": langgraph_result}}
+                        {"$set": update_data}
                     )
                     
                     # Log the successful analysis
@@ -622,6 +647,208 @@ async def create_prd(prd: PRDCreate):
     except Exception as e:
         logger.error(f"Error creating PRD: {e}")
         raise HTTPException(status_code=500, detail=f"Failed to create PRD: {str(e)}")
+
+@api_router.post("/prd/file", response_model=PRDResponse, status_code=status.HTTP_201_CREATED)
+async def create_prd_from_file(
+    Name: str = Form(...),
+    Status: str = Form(default="Draft"),
+    file: UploadFile = File(...)
+):
+    """Create a new PRD from uploaded file content and run LangGraph analysis"""
+    try:
+        # Validate file type
+        if not file.filename.lower().endswith(('.txt', '.md', '.doc', '.docx')):
+            raise HTTPException(
+                status_code=400, 
+                detail="Invalid file type. Please upload .txt, .md, .doc, or .docx files only."
+            )
+        
+        # Read file content
+        try:
+            file_content = await file.read()
+            content_text = file_content.decode('utf-8')
+        except UnicodeDecodeError:
+            # Try with different encoding if UTF-8 fails
+            try:
+                content_text = file_content.decode('latin-1')
+            except Exception as e:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Failed to read file content: {str(e)}"
+                )
+        
+        # Validate content is not empty
+        if not content_text.strip():
+            raise HTTPException(
+                status_code=400,
+                detail="File content is empty. Please upload a file with content."
+            )
+        
+        # Generate unique ID
+        prd_id = generate_uuid()
+        current_time = get_current_timestamp()
+        
+        # Create description from file content (first 200 characters)
+        description = content_text[:200] + "..." if len(content_text) > 200 else content_text
+        
+        prd_data = {
+            "ID": prd_id,
+            "Name": Name,
+            "Description": description,
+            "Status": Status,
+            "file_content": content_text,  # Store full file content
+            "original_filename": file.filename,
+            "created_at": current_time,
+            "updated_at": current_time
+        }
+        
+        # Save PRD to database
+        result = prd_collection.insert_one(prd_data)
+        
+        # Log the PRD creation from file
+        log_data = {
+            "uuid": generate_uuid(),
+            "prd_uuid": prd_id,
+            "action": "CREATE_FROM_FILE",
+            "details": f"PRD '{Name}' created from file '{file.filename}'",
+            "level": "INFO",
+            "timestamp": current_time
+        }
+        logs_collection.insert_one(log_data)
+        
+        logger.info(f"PRD created from file: {prd_id} - {file.filename}")
+        
+        # Call LangGraph API for analysis
+        try:
+            logger.info(f"🔍 Starting LangGraph analysis for PRD from file: {Name}")
+            
+            # Get LangGraph API URL from environment
+            langgraph_url = os.getenv("LANGGRAPH_API_URL", "http://localhost:8000")
+            
+            # Prepare request data for LangGraph with file content
+            langgraph_request_data = {
+                "name": Name,
+                "description": description,
+                "content": content_text  # Send full file content to LangGraph
+            }
+            
+            # Call LangGraph API
+            async with httpx.AsyncClient(timeout=None) as client:  # No timeout - wait indefinitely
+                response = await client.post(
+                    f"{langgraph_url}/analyze-prd",
+                    json=langgraph_request_data,
+                    headers={"Content-Type": "application/json"}
+                )
+                
+                if response.status_code == 200:
+                    # Parse LangGraph response
+                    langgraph_result = response.json()
+                    
+                    # Extract executive report if present
+                    executive_report = None
+                    if "executive_report" in langgraph_result:
+                        executive_report = langgraph_result["executive_report"]
+                    
+                    # Extract overall results if present
+                    overall_results = None
+                    if "overall_results" in langgraph_result:
+                        overall_results = langgraph_result["overall_results"]
+                    
+                    # Store LangGraph analysis, executive report, and overall results
+                    update_data = {"langgraph_analysis": langgraph_result}
+                    if executive_report:
+                        update_data["executive_report"] = executive_report
+                    if overall_results:
+                        update_data["overall_results"] = overall_results
+                    
+                    prd_collection.update_one(
+                        {"ID": prd_id},
+                        {"$set": update_data}
+                    )
+                    
+                    # Log the successful analysis
+                    analysis_log_data = {
+                        "uuid": generate_uuid(),
+                        "prd_uuid": prd_id,
+                        "action": "LANGGRAPH_ANALYSIS_COMPLETED",
+                        "details": f"LangGraph analysis completed for PRD '{Name}' from file '{file.filename}'. Raw response dumped to MongoDB.",
+                        "level": "INFO",
+                        "timestamp": current_time
+                    }
+                    # logs_collection.insert_one(analysis_log_data)
+                    
+                    logger.info(f"✅ LangGraph analysis completed for PRD from file: {Name}")
+                    logger.info(f"📊 Raw response dumped to MongoDB")
+                    
+                else:
+                    # Log LangGraph API error
+                    error_log_data = {
+                        "uuid": generate_uuid(),
+                        "prd_uuid": prd_id,
+                        "action": "LANGGRAPH_ANALYSIS_FAILED",
+                        "details": f"LangGraph API error: {response.status_code} - {response.text}",
+                        "level": "ERROR",
+                        "timestamp": current_time
+                    }
+                    logs_collection.insert_one(error_log_data)
+                    
+                    logger.error(f"❌ LangGraph API error: {response.status_code} - {response.text}")
+                    
+        except httpx.TimeoutException:
+            # Log timeout error
+            timeout_log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": prd_id,
+                "action": "LANGGRAPH_ANALYSIS_TIMEOUT",
+                "details": f"LangGraph analysis timed out for PRD '{Name}' from file '{file.filename}'",
+                "level": "WARNING",
+                "timestamp": current_time
+            }
+            logs_collection.insert_one(timeout_log_data)
+            
+            logger.warning(f"⏰ LangGraph analysis timed out for PRD from file: {Name}")
+            
+        except httpx.ConnectError:
+            # Log connection error
+            connection_log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": prd_id,
+                "action": "LANGGRAPH_ANALYSIS_CONNECTION_ERROR",
+                "details": f"Cannot connect to LangGraph API for PRD '{Name}' from file '{file.filename}'",
+                "level": "WARNING",
+                "timestamp": current_time
+            }
+            logs_collection.insert_one(connection_log_data)
+            
+            logger.warning(f"🔌 Cannot connect to LangGraph API for PRD from file: {Name}")
+            
+        except Exception as e:
+            # Log general error
+            error_log_data = {
+                "uuid": generate_uuid(),
+                "prd_uuid": prd_id,
+                "action": "LANGGRAPH_ANALYSIS_ERROR",
+                "details": f"LangGraph analysis error for PRD '{Name}' from file '{file.filename}': {str(e)}",
+                "level": "ERROR",
+                "timestamp": current_time
+            }
+            logs_collection.insert_one(error_log_data)
+            
+            logger.error(f"❌ LangGraph analysis error for PRD from file {Name}: {e}")
+        
+        # Get the final PRD data (including analysis if completed)
+        final_prd = prd_collection.find_one({"ID": prd_id}, {"_id": 0})
+        ensure_timestamps(final_prd)
+        
+        # Return the PRD response (including analysis if completed)
+        return PRDResponse(**final_prd)
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(f"Error creating PRD from file: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to create PRD from file: {str(e)}")
 
 @api_router.get("/prd", response_model=List[PRDResponse])
 async def get_all_prds():
