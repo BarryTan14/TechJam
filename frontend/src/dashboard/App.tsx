@@ -1,10 +1,10 @@
-import { Card, Row, Col, Button, Select, Modal, Spin, message } from 'antd';
+import { Card, Row, Col, Button, Select, Modal, Spin, message, Collapse, CollapseProps } from 'antd';
 import { ResponsiveChoropleth } from '@nivo/geo'
 import countries from '../usa_states.json'
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { SetStateAction, useState, useEffect, Key } from 'react';
 import { fetchDashboardData } from '../api';
-import { CheckCircleOutlined, WarningOutlined } from '@ant-design/icons'
+import { CheckCircleOutlined, GlobalOutlined, WarningOutlined } from '@ant-design/icons'
 
 const signOut = () => {
   localStorage.removeItem("username")
@@ -148,6 +148,13 @@ export default function Dashboard() {
         ),
     }));
 
+    const items: CollapseProps['items'] = [
+    {
+        key: '1',
+        label: <span style={{color: '#800080'}}>Social Friction</span>,
+        children: <p style={{color: '#800080'}}>More Info</p>,
+    },
+    ];
 
   return (
     <div style={{ padding: 20 }}>
@@ -164,12 +171,12 @@ export default function Dashboard() {
       <Row style={{marginBottom:"10px"}}>
         <Card title={dashboardData.prd?.Name && <span>PRD - {dashboardData.prd?.Name}</span>} style={{ marginBottom: "10px", flex: 1 }} bodyStyle={{ paddingBottom: "0px", paddingTop: "7px" }} >
         <Row style={{fontWeight:500}} justify="space-evenly">
-            <Col span={20}>
+            <Col span={18}>
                 <p><strong>Description:</strong> {dashboardData.prd?.Description || 'N/A'}</p>
             </Col>
-            <Col span={4} style={{marginTop: 6, justifyItems:"end"}}>
-                <Button style={{ marginRight: 2 }} onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
-                <Button>Upload</Button>
+            <Col span={6} style={{marginTop: 6, justifyItems:"end"}}>
+                <Button style={{ marginRight: 1 }} onClick={() => navigate(`/featureLogs?prdId=${prdId}`)}>View Logs</Button>
+                <Button>Download</Button>
             </Col>
         </Row>
         </Card>
@@ -272,25 +279,44 @@ export default function Dashboard() {
           </Card>
         </Col>
         <Col span={11} style={{ display: 'flex', flexDirection: 'column' }}>
-            <Card style={{ flex: 1, overflowY: "scroll" }} title="Analysis">
-                <div style={{textAlign:"center", fontSize:"16px", marginTop: "5px", marginBottom:"5px"}}>States Compliance</div>
+            <Card style={{ flex: 1, overflowY: "scroll" }} headStyle={{ textAlign: 'center' }} title="ANALYSIS">
+                <div style={{textAlign:"center", fontSize:"16px", marginTop: "5px", marginBottom:"9px"}}>States Compliance</div>
                     <Row justify={"center"}>
-                        <Col span={10} style={{textAlign:"center"}}>
-                            <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '90%', fontSize: "12px" }}>
+                        <Col span={11} style={{textAlign:"center"}}>
+                            <Card style={{ backgroundColor: "#d9f7be", color: "green", marginRight:"8px", height: '85%', fontSize: "12px" }}>
                                 <CheckCircleOutlined style={{fontSize: "20px"}} /><br />
                                 {selectedFeature ? (mapData.filter(state => state.value <= 0.4).length || 0) : ("NA")}<br />
                                 Compliant
                             </Card>
                         </Col>
-                        <Col span={10} style={{textAlign:"center"}}>
-                            <Card style={{ backgroundColor: "#FFCCCC", color: "red", marginRight:"8px", height: '90%', fontSize: "12px" }}>
+                        <Col span={11} style={{textAlign:"center"}}>
+                            <Card style={{ backgroundColor: "#FFCCCC", color: "red", marginRight:"8px", height: '85%', fontSize: "12px" }}>
                                 <WarningOutlined style={{fontSize: "20px"}}/><br />
                                 {selectedFeature ? (mapData.filter(state => state.value > 0.4).length || 0) : ("NA")}<br />
                                 Non-compliant
                             </Card>
                         </Col>
                     </Row>
-                <div style={{textAlign:"center", fontSize:"16px", marginTop: "30px", marginBottom:"5px"}}>Recommendation</div>
+                    <Row justify={"center"}>
+                        <Col span={22}>
+                            <div style={{
+                                position: "absolute",
+                                zIndex: 3,
+                                width: "100%",
+                                backgroundColor: '#E6E6FA',
+                                color: "purple",
+                                marginRight:"8px",
+                                fontSize: "12px",
+                                borderRadius: "8px", // adjust the radius as needed
+                                padding: "10px",     // optional padding for better appearance
+                                boxSizing: "border-box", // ensures padding doesn’t affect width
+                                }}
+                            >
+                                <Collapse style={{backgroundColor: '#E6E6FA'}} items={items} bordered={false}/>
+                            </div>
+                        </Col>
+                    </Row>
+                <div style={{textAlign:"center", fontSize:"16px", marginTop: "90px", marginBottom:"5px"}}>Recommendation</div>
             {selectedFeature ? (
               <div>
                 {selectedFeature?.recommendations && selectedFeature?.recommendations.length > 0 ? (
