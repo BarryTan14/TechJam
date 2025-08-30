@@ -13,6 +13,7 @@ from .us_state_compliance import USStateComplianceAgent
 from .non_compliant_states_analyzer import NonCompliantStatesAnalyzerAgent
 from .state_regulations_cache import StateRegulation, StateRegulationsCache, state_regulations_cache
 from .optimized_state_analyzer import OptimizedStateAnalyzer, StateAnalysisResult, BatchAnalysisResult
+from .executive_report_generator import ExecutiveReportGenerator, ExecutiveReport
 
 __all__ = [
     'AgentOutput',
@@ -34,5 +35,7 @@ __all__ = [
     'PRDParserAgent',
     'USStateComplianceAgent',
     'NonCompliantStatesAnalyzerAgent',
-    'OptimizedStateAnalyzer'
+    'OptimizedStateAnalyzer',
+    'ExecutiveReportGenerator',
+    'ExecutiveReport'
 ]

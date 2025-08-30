@@ -222,6 +222,46 @@ export default function Dashboard() {
                             <p>Select a feature to view analysis</p>
                         )}
                     </Card>
+                    <Card style={{marginBottom: "10px", maxHeight: "40%", overflowY: "scroll"}} title="Executive Report">
+                        {dashboardData.prd?.executive_report ? (
+                            <div>
+                                <p><strong>Report ID:</strong> {dashboardData.prd.executive_report.report_id || 'N/A'}</p>
+                                <p><strong>Generated:</strong> {dashboardData.prd.executive_report.generated_at ? new Date(dashboardData.prd.executive_report.generated_at).toLocaleString() : 'N/A'}</p>
+                                <div style={{ marginTop: '10px' }}>
+                                    <p><strong>Executive Summary:</strong></p>
+                                    <div style={{ 
+                                        fontSize: '12px', 
+                                        maxHeight: '150px', 
+                                        overflowY: 'auto', 
+                                        border: '1px solid #d9d9d9', 
+                                        padding: '8px', 
+                                        borderRadius: '4px',
+                                        backgroundColor: '#fafafa'
+                                    }}>
+                                        {dashboardData.prd.executive_report.executive_summary || 'No summary available'}
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: '10px' }}>
+                                    <p><strong>Key Findings:</strong></p>
+                                    <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
+                                        {dashboardData.prd.executive_report.key_findings?.slice(0, 3).map((finding: string, index: number) => (
+                                            <li key={index}>{finding}</li>
+                                        )) || <li>No findings available</li>}
+                                    </ul>
+                                </div>
+                                <div style={{ marginTop: '10px' }}>
+                                    <p><strong>Next Steps:</strong></p>
+                                    <ul style={{ fontSize: '11px', marginLeft: '15px' }}>
+                                        {dashboardData.prd.executive_report.next_steps?.slice(0, 2).map((step: string, index: number) => (
+                                            <li key={index}>{step}</li>
+                                        )) || <li>No next steps available</li>}
+                                    </ul>
+                                </div>
+                            </div>
+                        ) : (
+                            <p>No executive report available</p>
+                        )}
+                    </Card>
                     <Card style={{maxHeight: "40%", overflowY: "scroll"}} title="Recommendation">
                         {selectedFeature ? (
                             <div>

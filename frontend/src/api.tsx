@@ -19,6 +19,11 @@ interface Log {
 // API endpoints for PRD operations
 export const fetchPrd = () => axios.get('/api/prd')
 export const createPrd = (prd: Prd) => axios.post('/api/prd', prd)
+export const createPrdFromFile = (formData: FormData) => axios.post('/api/prd/file', formData, {
+    headers: {
+        'Content-Type': 'multipart/form-data',
+    },
+})
 export const deletePrd = (id: string) => axios.delete(`/api/prd/${id}`)
 export const updatePrd = (id: string, prd: Prd) => axios.put(`/api/prd/${id}`, prd)
 
